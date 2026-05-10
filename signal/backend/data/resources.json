@@ -1,0 +1,22 @@
+[
+  { "id": "UNIT-001", "type": "engine",       "name": "Engine 34",       "lat": 38.5449, "lon": -121.7405, "available": true, "station": "Davis Fire Station 34" },
+  { "id": "UNIT-002", "type": "engine",       "name": "Engine 35",       "lat": 38.5368, "lon": -121.7490, "available": true, "station": "Davis Fire Station 35" },
+  { "id": "UNIT-003", "type": "engine",       "name": "Engine 36",       "lat": 38.5530, "lon": -121.7280, "available": true, "station": "Davis Fire Station 36" },
+  { "id": "UNIT-004", "type": "engine",       "name": "Engine 71",       "lat": 38.6812, "lon": -121.7731, "available": true, "station": "Woodland Fire Station 71" },
+  { "id": "UNIT-005", "type": "engine",       "name": "Engine 72",       "lat": 38.6620, "lon": -121.7650, "available": true, "station": "Woodland Fire Station 72" },
+  { "id": "UNIT-006", "type": "engine",       "name": "Engine 73",       "lat": 38.6950, "lon": -121.7810, "available": true, "station": "Woodland Fire Station 73" },
+  { "id": "UNIT-007", "type": "engine",       "name": "Engine 51",       "lat": 38.5816, "lon": -121.5310, "available": true, "station": "West Sacramento Station 51" },
+  { "id": "UNIT-008", "type": "engine",       "name": "Engine 52",       "lat": 38.5680, "lon": -121.5450, "available": true, "station": "West Sacramento Station 52" },
+  { "id": "UNIT-009", "type": "engine",       "name": "Engine 53",       "lat": 38.5900, "lon": -121.5200, "available": true, "station": "West Sacramento Station 53" },
+  { "id": "UNIT-010", "type": "engine",       "name": "Engine 21",       "lat": 38.5218, "lon": -121.9729, "available": true, "station": "Winters Fire Station 21" },
+  { "id": "UNIT-011", "type": "engine",       "name": "Engine 22",       "lat": 38.5100, "lon": -121.9850, "available": true, "station": "Winters Fire Station 22" },
+  { "id": "UNIT-012", "type": "engine",       "name": "Engine 23",       "lat": 38.5320, "lon": -121.9610, "available": true, "station": "Winters Fire Station 23" },
+  { "id": "UNIT-013", "type": "personnel",    "name": "Rescue Team A",   "lat": 38.5449, "lon": -121.7405, "available": true, "station": "Davis Fire Station 34" },
+  { "id": "UNIT-014", "type": "personnel",    "name": "Rescue Team B",   "lat": 38.6812, "lon": -121.7731, "available": true, "station": "Woodland Fire Station 71" },
+  { "id": "UNIT-015", "type": "personnel",    "name": "Rescue Team C",   "lat": 38.5816, "lon": -121.5310, "available": true, "station": "West Sacramento Station 51" },
+  { "id": "UNIT-016", "type": "personnel",    "name": "Rescue Team D",   "lat": 38.5218, "lon": -121.9729, "available": true, "station": "Winters Fire Station 21" },
+  { "id": "UNIT-017", "type": "air_tanker",   "name": "Air Tanker 1",    "lat": 38.6676, "lon": -121.4012, "available": true, "station": "McClellan Airport" },
+  { "id": "UNIT-018", "type": "air_tanker",   "name": "Air Tanker 2",    "lat": 38.5630, "lon": -121.2978, "available": true, "station": "Mather Airport" },
+  { "id": "UNIT-019", "type": "heavy_rescue", "name": "Heavy Rescue 1",  "lat": 38.5449, "lon": -121.7405, "available": true, "station": "Davis Fire Station 34" },
+  { "id": "UNIT-020", "type": "hazmat",       "name": "HazMat Unit 1",   "lat": 38.5816, "lon": -121.5310, "available": true, "station": "West Sacramento Station 51" }
+]
