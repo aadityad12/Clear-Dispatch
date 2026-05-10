@@ -113,17 +113,22 @@ Transcript:
 Respond with ONLY a JSON object:
 {{
   "severity": "CRITICAL|URGENT|STANDARD",
-  "incident_type": "fire|evacuation|medical|structure_fire|hazmat|other",
+  "incident_type": "fire|evacuation|medical|structure|hazmat|other",
   "location": "street address or landmark if mentioned",
   "zone": "zone code like YL-01 if determinable, else null",
   "lat": null,
   "lon": null,
   "caller_status": "brief status of caller",
-  "people_affected": "number or description of people involved",
-  "hazards": "any immediate hazards",
-  "vulnerable": true or false,
+  "people_affected": 5,
+  "hazards": ["propane tanks", "power lines"],
+  "vulnerable": true,
   "one_liner": "one-sentence summary"
 }}
+
+Rules:
+- people_affected must be an integer, or omit it
+- hazards must be a JSON array of strings, or omit it
+- vulnerable must be a boolean, not a string
 
 Rules for severity:
 - CRITICAL: imminent life threat, spreading fire, unresponsive patient

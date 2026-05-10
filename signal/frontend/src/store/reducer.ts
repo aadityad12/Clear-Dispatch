@@ -15,8 +15,6 @@ export const initialState: AppState = {
   briefings: [],
   auditLog: [],
   connected: false,
-  activeTranscript: null,
-  surgeVoiceSession: null,
 }
 
 export type Action =
@@ -114,6 +112,9 @@ function handleMessage(state: AppState, msg: WsMessage): AppState {
       }
     case 'CALL_UPDATED': {
       const p = msg.payload
+      const normalizedHazards = p.hazards != null
+        ? (Array.isArray(p.hazards) ? p.hazards : [String(p.hazards)].filter(Boolean))
+        : undefined
       const calls = state.calls.map((c) => {
         if (c.id !== p.id) return c
         const updatedTranscript = p.transcript_snippet
@@ -124,8 +125,8 @@ function handleMessage(state: AppState, msg: WsMessage): AppState {
           ...(p.location != null ? { location: p.location } : {}),
           ...(p.one_liner != null ? { one_liner: p.one_liner } : {}),
           ...(p.caller_status != null ? { caller_status: p.caller_status } : {}),
-          ...(p.people_affected != null ? { people_affected: p.people_affected } : {}),
-          ...(p.hazards != null ? { hazards: p.hazards } : {}),
+          ...(p.people_affected != null ? { people_affected: Number(p.people_affected) || undefined } : {}),
+          ...(normalizedHazards != null ? { hazards: normalizedHazards } : {}),
         }
         const updatedSeverity = (p.severity && p.severity !== 'PENDING') ? p.severity : c.severity
         return {

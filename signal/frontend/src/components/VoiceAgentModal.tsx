@@ -42,7 +42,6 @@ export default function VoiceAgentModal({ callId, onComplete, onDismiss }: Props
         if (cancelled) return
         await conversation.startSession({
           agentId: AGENT_ID,
-          connectionType: 'webrtc',
         })
       } catch (err) {
         if (!cancelled) {

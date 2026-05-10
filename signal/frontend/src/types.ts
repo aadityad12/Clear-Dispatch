@@ -39,12 +39,6 @@ export interface CallUpdatedPayload {
   hazards?: string[]
 }
 
-export interface SurgeVoiceSession {
-  callId: string
-  status: 'connecting' | 'active' | 'ending' | 'done'
-  transcript: string
-}
-
 export interface AgentState {
   name: AgentName
   status: AgentStatus
@@ -79,8 +73,6 @@ export interface AppState {
   briefings: Briefing[]
   auditLog: AuditEntry[]
   connected: boolean
-  activeTranscript: string | null
-  surgeVoiceSession: SurgeVoiceSession | null
 }
 
 export type WsMessage =

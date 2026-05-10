@@ -54,15 +54,18 @@ Transcript so far:
 Respond with ONLY a JSON object containing any fields you can confidently extract:
 {{
   "severity": "CRITICAL|URGENT|STANDARD",
-  "incident_type": "fire|evacuation|medical|structure_fire|hazmat|other",
+  "incident_type": "fire|evacuation|medical|structure|hazmat|other",
   "location": "street address or landmark",
   "caller_status": "brief status of caller",
-  "people_affected": "number or description of people involved",
-  "hazards": "any immediate hazards mentioned",
+  "people_affected": 5,
+  "hazards": ["propane tanks", "power lines"],
   "one_liner": "one-sentence summary of the incident"
 }}
 
-Only include fields you can confidently extract from the transcript. Omit fields that are unclear or not mentioned."""
+Rules:
+- people_affected must be an integer, or omit it
+- hazards must be a JSON array of strings, or omit it
+- Only include fields you can confidently extract. Omit any field that is unclear or not mentioned."""
 
     try:
         response = await _client.messages.create(

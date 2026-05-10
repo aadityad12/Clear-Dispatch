@@ -128,7 +128,7 @@ function CallCard({ call, onShowOnMap }: { call: Call; onShowOnMap?: (lat: numbe
                   {call.live_fields.people_affected} affected
                 </span>
               )}
-              {call.live_fields.hazards?.map((h) => (
+              {Array.isArray(call.live_fields.hazards) && call.live_fields.hazards.map((h) => (
                 <span key={h} style={pillStyle('#2d1f0a', '#fb923c')}>
                   ⚠ {h}
                 </span>
