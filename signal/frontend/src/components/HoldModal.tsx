@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { HoldEvent } from '../types'
 
 interface Props {
@@ -8,17 +8,35 @@ interface Props {
 }
 
 const ASSET_LABELS: Record<string, string> = {
-  air_tanker:    'Air Tanker deployment requested',
-  heavy_rescue:  'Heavy Rescue deployment requested',
-  hazmat:        'Hazmat deployment requested',
-}
-
-function formatAsset(type: string): string {
-  return ASSET_LABELS[type] ?? `${type} deployment requested`
+  air_tanker:   'Air Tanker deployment requested',
+  heavy_rescue: 'Heavy Rescue deployment requested',
+  hazmat:       'Hazmat deployment requested',
 }
 
 export default function HoldModal({ hold, onConfirm, onCancel }: Props) {
   const [busy, setBusy] = useState<'confirm' | 'cancel' | null>(null)
+  const cardRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!hold) return
+    const prev = document.activeElement as HTMLElement
+    cardRef.current?.querySelector('button')?.focus()
+    return () => { try { prev?.focus() } catch {} }
+  }, [hold])
+
+  useEffect(() => {
+    if (!hold) return
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== 'Tab' || !cardRef.current) return
+      const focusable = cardRef.current.querySelectorAll<HTMLElement>('button')
+      if (focusable.length === 0) return
+      const first = focusable[0], last = focusable[focusable.length - 1]
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus() }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [hold])
 
   if (!hold) return null
 
@@ -31,9 +49,7 @@ export default function HoldModal({ hold, onConfirm, onCancel }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ hold_id: hold.hold_id }),
       })
-    } catch {
-      // proceed regardless
-    }
+    } catch { /* proceed regardless */ }
     onConfirm(hold.hold_id)
     setBusy(null)
   }
@@ -47,44 +63,37 @@ export default function HoldModal({ hold, onConfirm, onCancel }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ hold_id: hold.hold_id }),
       })
-    } catch {
-      // proceed regardless
-    }
+    } catch { /* proceed regardless */ }
     onCancel(hold.hold_id)
     setBusy(null)
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
-      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-8">
-        <h2 className="text-red-600 font-bold text-lg mb-4">
-          ⚠️ PROTOCOL HOLD — Dispatcher Confirmation Required
-        </h2>
-
-        <div className="space-y-2 mb-6">
-          <p className="text-slate-900 font-medium">{formatAsset(hold.asset_type)}</p>
-          <p className="text-sm text-slate-500">
-            Call ID: <span className="font-mono">{hold.call_id}</span>
-          </p>
-          <p className="text-sm text-slate-600 mt-3">
-            This action requires dispatcher approval before proceeding.
-          </p>
+    <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="hold-title">
+      <div className="modal-card" ref={cardRef}>
+        <div className="modal-header" id="hold-title">
+          <span className="modal-warn">⚠</span>
+          <span>Protocol Hold — Dispatcher Confirmation Required</span>
         </div>
-
-        <div className="flex gap-3">
-          <button
-            onClick={handleConfirm}
-            disabled={busy !== null}
-            className="flex-1 bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {busy === 'confirm' ? 'Confirming…' : 'Confirm'}
+        <div className="modal-body">
+          <div className="modal-asset">
+            {ASSET_LABELS[hold.asset_type] ?? `${hold.asset_type} deployment requested`}
+          </div>
+          <div className="modal-meta">
+            <div>CALL <span className="v">{hold.call_id}</span></div>
+            <div>UNIT <span className="v">{hold.unit_id}</span></div>
+            <div>HOLD <span className="v">{hold.hold_id}</span></div>
+          </div>
+          <div className="modal-text">
+            This action requires dispatcher approval before proceeding. Heavy assets are deployed only on explicit confirmation per CAL FIRE protocol §4.2.
+          </div>
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-primary" disabled={busy !== null} onClick={handleConfirm}>
+            {busy === 'confirm' ? <span className="spinner" /> : '✓'} Confirm
           </button>
-          <button
-            onClick={handleCancel}
-            disabled={busy !== null}
-            className="flex-1 bg-slate-100 text-slate-700 px-8 py-3 rounded-lg font-semibold hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {busy === 'cancel' ? 'Cancelling…' : 'Cancel'}
+          <button className="btn btn-outline" disabled={busy !== null} onClick={handleCancel}>
+            {busy === 'cancel' ? <span className="spinner" /> : '✕'} Cancel
           </button>
         </div>
       </div>

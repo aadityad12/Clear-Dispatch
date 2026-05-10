@@ -1,7 +1,7 @@
-import { useReducer, useCallback, useState } from 'react'
+import { useReducer, useCallback, useState, useEffect, useRef } from 'react'
 import { reducer, initialState } from './store/reducer'
 import { useWebSocket } from './hooks/useWebSocket'
-import { WsMessage } from './types'
+import { WsMessage, AgentName } from './types'
 import ModeIndicator from './components/ModeIndicator'
 import AgentCards from './components/AgentCards'
 import CallQueue from './components/CallQueue'
@@ -16,6 +16,30 @@ export default function App() {
   const [state, dispatch] = useReducer(reducer, initialState)
   const [audioBlocked, setAudioBlocked] = useState(false)
   const [pendingAudioUrl, setPendingAudioUrl] = useState<string | null>(null)
+  const [agentFlash, setAgentFlash] = useState<Record<string, boolean>>({})
+  const prevAgentsRef = useRef(state.agents)
+
+  // Flash agent cards when transitioning into RUNNING
+  useEffect(() => {
+    const flashes: Record<string, boolean> = {}
+    ;(Object.keys(state.agents) as AgentName[]).forEach((name) => {
+      const prev = prevAgentsRef.current[name]
+      if (prev?.status !== 'RUNNING' && state.agents[name].status === 'RUNNING') {
+        flashes[name] = true
+      }
+    })
+    if (Object.keys(flashes).length > 0) {
+      setAgentFlash((f) => ({ ...f, ...flashes }))
+      setTimeout(() => {
+        setAgentFlash((f) => {
+          const next = { ...f }
+          Object.keys(flashes).forEach((k) => delete next[k])
+          return next
+        })
+      }, 600)
+    }
+    prevAgentsRef.current = state.agents
+  }, [state.agents])
 
   const onMessage = useCallback((msg: WsMessage) => {
     dispatch({ type: 'WS_MESSAGE', message: msg })
@@ -49,26 +73,24 @@ export default function App() {
   }, [pendingAudioUrl])
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
+    <div className="app-shell">
       <ModeIndicator mode={state.mode} connected={state.connected} />
 
-      <main className="flex-1 p-6 pb-20">
-        <div className="grid grid-cols-3 gap-6">
-          <CallQueue calls={state.calls} />
-          <MapView calls={state.calls} />
-          <div className="flex flex-col gap-4">
-            <AgentCards agents={state.agents} />
-            <BriefingPanel
-              briefings={state.briefings}
-              audioBlocked={audioBlocked}
-              onPlayAudio={handlePlayAudio}
-            />
-          </div>
+      <div className="main-grid">
+        <CallQueue calls={state.calls} />
+        <MapView calls={state.calls} />
+        <div className="right-col">
+          <AgentCards agents={state.agents} flashing={agentFlash} />
+          <BriefingPanel
+            briefings={state.briefings}
+            audioBlocked={audioBlocked}
+            onPlayAudio={handlePlayAudio}
+          />
         </div>
-      </main>
+      </div>
 
       <AuditTrail entries={state.auditLog} />
-      <DemoControls />
+      <DemoControls mode={state.mode} />
 
       <OverrideButton mode={state.mode} onOverride={() => {}} />
 
