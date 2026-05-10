@@ -66,6 +66,25 @@ async def process_call(call_data: dict) -> dict:
     return {"call_id": call_id}
 
 
+async def _stream_description(call: dict) -> None:
+    if call.get("status") == "SURGE_VOICE":
+        return
+    description = call.get("description", "")
+    if not description:
+        return
+    words = description.split()
+    chunk_size = 3
+    for i in range(0, len(words), chunk_size):
+        chunk = " ".join(words[i : i + chunk_size])
+        await manager.broadcast("CALL_UPDATED", {
+            "id": call["id"],
+            "final": False,
+            "transcript_snippet": chunk,
+        })
+        await asyncio.sleep(0.15)
+    await manager.broadcast("CALL_UPDATED", {"id": call["id"], "final": True})
+
+
 async def _run_pipeline(call: dict) -> None:
     from agents.triage import triage_agent
     from agents.resource import resource_agent
@@ -73,6 +92,8 @@ async def _run_pipeline(call: dict) -> None:
 
     if state.system_state.get("paused"):
         return
+
+    asyncio.create_task(_stream_description(call))
 
     triage = await triage_agent(call)
 

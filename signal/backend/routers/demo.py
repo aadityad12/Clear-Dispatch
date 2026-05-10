@@ -18,6 +18,7 @@ async def demo_reset():
         "mode": "ASSISTED",
         "surge_started_at": None,
         "call_timestamps": [],
+        "paused": False,
     })
     state.call_queue.clear()
     state.incident_log.clear()
@@ -77,6 +78,7 @@ async def demo_trigger_surge():
     now = datetime.now(timezone.utc).isoformat()
     state.system_state["mode"] = "SURGE"
     state.system_state["surge_started_at"] = now
+    state.system_state["paused"] = False
     state.simulator_lambda["value"] = 15.0
 
     await manager.broadcast("MODE_CHANGE", {"mode": "SURGE", "timestamp": now})

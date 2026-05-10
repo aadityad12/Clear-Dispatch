@@ -11,14 +11,17 @@ import HoldModal from './components/HoldModal'
 import BriefingPanel from './components/BriefingPanel'
 import AuditTrail from './components/AuditTrail'
 import DemoControls from './components/DemoControls'
+import AssistedCallModal from './components/AssistedCallModal'
+import SurgeCallModal from './components/SurgeCallModal'
+import SosQrCode from './components/SosQrCode'
 
 export default function App() {
   const [state, dispatch] = useReducer(reducer, initialState)
-  const [audioBlocked, setAudioBlocked] = useState(false)
-  const [pendingAudioUrl, setPendingAudioUrl] = useState<string | null>(null)
   const [agentFlash, setAgentFlash] = useState<Record<string, boolean>>({})
   const prevAgentsRef = useRef(state.agents)
   const mapRef = useRef<MapHandle>(null)
+  const [activeCallId, setActiveCallId] = useState<string | null>(null)
+  const [activeSurgeCallId, setActiveSurgeCallId] = useState<string | null>(null)
 
   // Flash agent cards when transitioning into RUNNING
   useEffect(() => {
@@ -42,14 +45,17 @@ export default function App() {
     prevAgentsRef.current = state.agents
   }, [state.agents])
 
+  // Auto-close modal when active call reaches DISPATCHED
+  useEffect(() => {
+    if (!activeCallId) return
+    const call = state.calls.find((c) => c.id === activeCallId)
+    if (!call || call.call_status === 'DISPATCHED') {
+      setActiveCallId(null)
+    }
+  }, [state.calls, activeCallId])
+
   const onMessage = useCallback((msg: WsMessage) => {
     dispatch({ type: 'WS_MESSAGE', message: msg })
-    if (msg.type === 'BRIEFING_READY' && msg.payload.audio_url) {
-      new Audio(msg.payload.audio_url).play().catch(() => {
-        setAudioBlocked(true)
-        setPendingAudioUrl(msg.payload.audio_url)
-      })
-    }
   }, [])
 
   const onConnect = useCallback(() => dispatch({ type: 'WS_CONNECTED' }), [])
@@ -65,13 +71,45 @@ export default function App() {
     dispatch({ type: 'WS_MESSAGE', message: { type: 'HOLD_RESOLVED', payload: { hold_id: holdId, action: 'CANCELLED' } } })
   }, [])
 
-  const handlePlayAudio = useCallback(() => {
-    if (pendingAudioUrl) {
-      new Audio(pendingAudioUrl).play()
-      setAudioBlocked(false)
-      setPendingAudioUrl(null)
+  const handleSelectCall = useCallback(async (callId: string) => {
+    const call = state.calls.find((c) => c.id === callId)
+    if (!call) return
+    if (state.mode === 'SURGE') {
+      setActiveSurgeCallId(callId)
+      return
     }
-  }, [pendingAudioUrl])
+    if (call.call_status === 'RINGING') {
+      try {
+        await fetch('/api/call/accept', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ call_id: callId }),
+        })
+      } catch {
+        // best-effort — WS will deliver CALL_UPDATED with status ACTIVE regardless
+      }
+    }
+    setActiveCallId(callId)
+  }, [state.calls, state.mode])
+
+  const handleEndAssistedCall = useCallback(async (
+    callId: string,
+    approvedServices: string[],
+    notes: string,
+  ) => {
+    setActiveCallId(null)
+    try {
+      await fetch('/api/call/end-live', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ call_id: callId, approved_services: approvedServices, notes }),
+      })
+    } catch {
+      // best-effort
+    }
+  }, [])
+
+  const activeCall = activeCallId ? state.calls.find((c) => c.id === activeCallId) : null
 
   return (
     <div className="app-shell">
@@ -80,17 +118,13 @@ export default function App() {
       <div className="main-grid">
         <CallQueue
           calls={state.calls}
-          briefings={state.briefings}
           onShowOnMap={(lat, lon) => mapRef.current?.flyTo(lat, lon)}
+          onSelectCall={handleSelectCall}
         />
         <MapView ref={mapRef} calls={state.calls} mode={state.mode} />
         <div className="right-col">
           <AgentCards agents={state.agents} flashing={agentFlash} />
-          <BriefingPanel
-            briefings={state.briefings}
-            audioBlocked={audioBlocked}
-            onPlayAudio={handlePlayAudio}
-          />
+          <BriefingPanel briefings={state.briefings} />
         </div>
       </div>
 
@@ -98,12 +132,31 @@ export default function App() {
       <DemoControls mode={state.mode} />
 
       <OverrideButton mode={state.mode} onOverride={() => {}} />
+      {state.mode === 'SURGE' && <SosQrCode />}
 
       <HoldModal
         hold={state.activeHold}
         onConfirm={handleConfirmHold}
         onCancel={handleCancelHold}
       />
+
+      {activeCall && state.mode === 'ASSISTED' && (
+        <AssistedCallModal
+          call={activeCall}
+          onEndCall={handleEndAssistedCall}
+          onDismiss={() => setActiveCallId(null)}
+        />
+      )}
+
+      {activeSurgeCallId && (() => {
+        const surgeCall = state.calls.find((c) => c.id === activeSurgeCallId)
+        return surgeCall ? (
+          <SurgeCallModal
+            call={surgeCall}
+            onDismiss={() => setActiveSurgeCallId(null)}
+          />
+        ) : null
+      })()}
     </div>
   )
 }

@@ -99,8 +99,12 @@ function handleMessage(state: AppState, msg: WsMessage): AppState {
         audio_url: msg.payload.audio_url,
         timestamp: now,
       }
+      const calls = state.calls.map(c =>
+        c.id === msg.payload.call_id ? { ...c, briefing_text: msg.payload.text } : c
+      )
       return {
         ...state,
+        calls,
         briefings: [briefing, ...state.briefings],
         auditLog: [{ timestamp: now, type: 'BRIEFING_READY', summary: msg.payload.text }, ...state.auditLog],
       }

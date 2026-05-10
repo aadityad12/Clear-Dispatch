@@ -29,7 +29,8 @@ def _find_nearest(lat: float, lon: float, prefer_heavy: bool = False) -> dict | 
         heavy = [r for r in available if r.get("type") in HEAVY_ASSET_TYPES]
         pool = heavy if heavy else available
     else:
-        pool = available
+        standard = [r for r in available if r.get("type") not in HEAVY_ASSET_TYPES]
+        pool = standard if standard else available
 
     return min(pool, key=lambda r: _haversine(lat, lon, r["lat"], r["lon"]))
 
