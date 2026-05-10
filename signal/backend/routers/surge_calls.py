@@ -36,6 +36,8 @@ def _extract_json(text: str) -> dict:
 
 class InitiateRequest(BaseModel):
     zone: Optional[str] = "YL-03"
+    lat: Optional[float] = None
+    lon: Optional[float] = None
 
 
 class CompleteRequest(BaseModel):
@@ -52,12 +54,14 @@ async def surge_initiate(body: InitiateRequest):
     state.system_state["call_timestamps"].append(now)
 
     zone = body.zone or "YL-03"
+    lat = body.lat if body.lat is not None else 38.5449
+    lon = body.lon if body.lon is not None else -121.7405
 
     call = {
         "id": call_id,
         "caller_id": f"SURGE-VOICE-{call_id}",
-        "lat": 38.5449,
-        "lon": -121.7405,
+        "lat": lat,
+        "lon": lon,
         "zone": zone,
         "reported_type": "unknown",
         "description": "",
@@ -79,8 +83,8 @@ async def surge_initiate(body: InitiateRequest):
         "zone": zone,
         "vulnerable": False,
         "incident_type": "unknown",
-        "lat": call["lat"],
-        "lon": call["lon"],
+        "lat": lat,
+        "lon": lon,
     })
 
     _log.info("SURGE_VOICE [%s] initiated — zone=%s", call_id, zone)

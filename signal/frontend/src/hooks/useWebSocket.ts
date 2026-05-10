@@ -19,7 +19,8 @@ export function useWebSocket(
 
     function connect() {
       if (isCancelled) return
-      const url = import.meta.env.VITE_WS_URL || 'ws://localhost:8000/ws'
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+      const url = `${protocol}//${window.location.host}/ws`
       const ws = new WebSocket(url)
       wsRef.current = ws
 

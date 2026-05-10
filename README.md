@@ -110,6 +110,55 @@ POST /call
   → BRIEFING_READY + INCIDENT_REPORT broadcast
 ```
 
+## Phone SOS Setup (LAN Demo)
+
+In Surge Mode, a QR code appears on the dispatcher screen. A judge scans it with their phone, taps the SOS button, and is connected directly to the ElevenLabs voice agent — appearing as a live call in the Active Calls queue with their real GPS location.
+
+### Requirements
+- Laptop and phone on the **same Wi-Fi network**
+- Phone: **Android + Chrome** (iOS Safari blocks microphone on HTTP)
+- ElevenLabs API key in `signal/backend/.env`
+
+### Setup
+
+**1. Find your laptop's LAN IP:**
+```bash
+ipconfig getifaddr en0
+# Example output: 192.168.1.42
+```
+
+**2. Start the backend** (unchanged — binds to localhost, Vite proxies all API calls):
+```bash
+cd signal/backend && uvicorn main:app --reload --port 8000
+```
+
+**3. Start the frontend** (Vite now binds to `0.0.0.0` — accessible on the LAN):
+```bash
+cd signal/frontend && npm run dev
+# Vite prints two URLs:
+#   Local:   http://localhost:5173/
+#   Network: http://192.168.1.42:5173/  ← phone uses this
+```
+
+**4. In the demo:**
+- Click **Trigger Surge** — the SURGE banner activates and a QR code appears in the top-right
+- Hand your phone to a judge and ask them to scan the QR code
+- The phone opens `http://192.168.1.42:5173/sos`
+
+**5. On the phone:**
+- Page shows "AWAITING EMERGENCY DECLARATION" until Surge Mode is active
+- Once Surge is active: a large red **SOS** button appears
+- Tap **SOS** → allow microphone + location permissions when prompted
+- Speak to the voice agent — it gathers incident details and confirms dispatch
+- The agent ends the call automatically (~15s after its closing line)
+- The call appears in the Active Calls queue on the dispatcher screen with the phone's GPS coordinates
+
+### ElevenLabs Agent (dashboard config)
+Before the demo, update the agent on the [ElevenLabs dashboard](https://elevenlabs.io):
+1. **System prompt closing line** — replace "I am alerting emergency services now…" with:
+   > "Emergency services have been dispatched to your location. While you wait: [one short situation-appropriate action]. Help is on the way."
+2. **Silence timeout** — set to **15 seconds** so the agent ends the session automatically after the closing line if the caller doesn't respond
+
 ## Smoke Test
 
 Requires the backend to be running and `pip install websockets`:
