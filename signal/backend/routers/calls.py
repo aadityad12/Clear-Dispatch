@@ -71,6 +71,9 @@ async def _run_pipeline(call: dict) -> None:
     from agents.resource import resource_agent
     from agents.relay import relay_agent
 
+    if state.system_state.get("paused"):
+        return
+
     triage = await triage_agent(call)
 
     for c in state.call_queue:

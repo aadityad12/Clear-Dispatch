@@ -83,6 +83,38 @@ A human-in-the-loop emergency dispatch support system for wildfire surge events.
 | **Audio briefing** | A TTS-rendered briefing via ElevenLabs; `audio_url` field contains MP3 URL, or null if TTS was unavailable. | Voice briefing, spoken briefing |
 | **Briefing history** | The ordered array of all past **Briefings** for the current session (newest first), stored in frontend React state. Reset on page reload. | Briefing list, briefing array, past briefings |
 
+## Live Caller Transcription (ASSISTED Mode Feature)
+
+| Term | Definition | Aliases to avoid |
+| --- | --- | --- |
+| **Live Caller Transcription** | An ASSISTED mode feature where the dispatcher clicks "Answer Call", selects a pre-recorded scenario, and the backend streams a pre-computed transcript sentence-by-sentence to the dispatcher via CALL_UPDATED WS events. Claude Haiku extracts structured fields (location, type, people affected, hazards) every 2 sentences, updating the call card in real time with a LIVE badge. | Live transcription, scenario playback, simulated transcription |
+| **CALL_UPDATED** | WebSocket event broadcast during live transcription, containing incremental transcript updates and extracted call fields (severity, incident_type, location, people_affected, hazards, structure_type). | Transcript update, extraction update |
+| **Pre-transcribed scenario** | A JSON file in `backend/data/transcripts/` containing a complete call scenario as pre-computed sentences, enabling offline transcript streaming without live STT API calls. Examples: tesla_accident, wildfire_evacuation, structure_fire, medical_elderly, hazmat_spill. | Scenario file, transcript scenario, canned scenario |
+
+## Surge Mode Voice Features
+
+| Term | Definition | Aliases to avoid |
+| --- | --- | --- |
+| **Surge Voice Session** | When in SURGE mode, the dispatcher clicks "Simulate Incoming Call", opening a VoiceAgentModal where a human (teammate/judge) speaks to an autonomous ElevenLabs conversational AI agent as if they were a caller. The agent gathers location, emergency type, people affected, and immediate dangers in natural conversation, then the full transcript is sent to `/surge/call/complete` where Claude Haiku re-extracts structured fields and feeds into the standard **_run_pipeline()**. | Voice session, autonomous voice call, simulated voice call |
+| **ElevenLabs Conversational AI** | An autonomous voice agent (Agent ID: agent_1701kr8n4kw9fr9aapm59ca3edg8) that answers 911 calls in Surge Mode. Uses the @elevenlabs/react `useConversation` hook. Never used in ASSISTED mode; only active when system is in SURGE. | Conversational agent, autonomous voice agent, ElevenLabs voice |
+| **ElevenLabs Scribe STT** | ElevenLabs speech-to-text product used offline to pre-transcribe recorded call audio into text scripts for scenario playback. Not used in live demo paths. | Scribe, transcription service, offline STT |
+
+## System Demonstration and Pedagogy
+
+| Term | Definition | Aliases to avoid |
+| --- | --- | --- |
+| **Tesla / Waymo metaphor** | Educational framing for judges: **ASSISTED mode = Tesla** (human driver + AI co-pilot providing real-time decision support), **SURGE mode = Waymo** (fully autonomous AI with human approval checkpoints). Illustrates the human-in-the-loop spectrum and escalation strategy. | Analogy, metaphor, instructional framing |
+| **Demo pause** | Dispatcher action (POST /demo/pause) that pauses call generation by setting **simulator lambda** to 0, setting `paused: true` in system_state, and blocking **_run_pipeline()** execution. Conserves API credits during demo. Broadcast as DEMO_PAUSED WS event. | Pause simulator, pause generation, hold demo |
+| **Demo resume** | Dispatcher action (POST /demo/resume) that resumes call generation by restoring prior **simulator lambda**, setting `paused: false`, and re-enabling **_run_pipeline()**. Broadcast as DEMO_RESUMED WS event. | Resume simulator, resume generation, restart demo |
+
+## New WebSocket Events
+
+| Term | Definition | Aliases to avoid |
+| --- | --- | --- |
+| **CALL_UPDATED** | WebSocket event broadcast during live transcription in ASSISTED mode, containing incremental transcript chunk and extracted structured fields. Triggers call card LIVE badge and transcript panel expansion. | Update event, transcript event |
+| **DEMO_PAUSED** | WebSocket event broadcast when `/demo/pause` is called; signals to all clients that simulator has paused. | Pause event, pause notification |
+| **DEMO_RESUMED** | WebSocket event broadcast when `/demo/resume` is called; signals to all clients that simulator has resumed. | Resume event, resume notification |
+
 ## System Events
 
 | Term | Definition | Aliases to avoid |
@@ -123,6 +155,17 @@ A human-in-the-loop emergency dispatch support system for wildfire surge events.
 | **Demo start** | Action that injects 2 synthetic normal calls into the call queue to demonstrate triage and dispatch. Logged: "Demo started — 2 normal calls injected". | Start demo, demo begin |
 | **Demo surge trigger** | Action that injects 4 synthetic calls (including a **heavy asset** request) to demonstrate SURGE mode and the HOLD protocol. Logged: "Demo surge triggered — 4 calls injected, heavy asset included". | Trigger surge, surge demo |
 | **Demo-quiet mode** | State of the simulator after **Demo reset**, with **simulator lambda** = 0.1, producing negligible background calls (~1 per 10 minutes) so judge focus is on injected demo calls. | Quiet simulator, demo pause, background-quiet |
+
+## New Endpoints
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| POST | `/call/start-live` | Dispatcher initiates live transcription in ASSISTED mode; selects a scenario. Backend begins streaming pre-transcribed sentences via CALL_UPDATED. |
+| POST | `/call/end-live` | Dispatcher ends live transcription session; triggers TRIAGE, RESOURCE, RELAY pipeline on accumulated transcript. |
+| POST | `/surge/call/initiate` | Initiates a **Surge Voice Session** in SURGE mode; opens VoiceAgentModal for human caller to speak to ElevenLabs Conversational AI. |
+| POST | `/surge/call/complete` | Dispatcher submits completed ElevenLabs voice conversation transcript; Claude Haiku re-extracts fields and feeds into **_run_pipeline()**. |
+| POST | `/demo/pause` | Pauses call generation by setting simulator_lambda to 0; blocks _run_pipeline; broadcasts DEMO_PAUSED. |
+| POST | `/demo/resume` | Resumes call generation by restoring simulator_lambda; re-enables _run_pipeline; broadcasts DEMO_RESUMED. |
 
 ---
 
@@ -165,35 +208,57 @@ A human-in-the-loop emergency dispatch support system for wildfire surge events.
 
 ## Example Dialogue
 
-> **Frontend Dev**: "During a judge demo, if the briefing history accumulates and then the judge reloads the page, what happens to the briefings?"
+> **Frontend Dev**: "Let me walk through the demo flow. We start with **Demo reset**, right?"
 >
-> **Domain Expert**: "The **Briefing history** is frontend session state — it's stored only in React component state. When the page reloads, the **Briefing history** is lost. But the **incident log** on the backend persists. When the client reconnects and calls `GET /state`, it gets back the system mode and recent incidents, but the **Briefing history** starts fresh."
+> **Domain Expert**: "Right. **Demo reset** clears the call queue, incident log, and briefing history. It sets **simulator lambda** to 0.1, entering **demo-quiet mode** so background noise doesn't interfere. We're now ready for a clean, scripted demo."
 >
-> **Frontend Dev**: "So the judge would lose the visual timeline of briefings they saw during the demo?"
+> **Frontend Dev**: "Then the dispatcher clicks 'Start Demo', which injects 2 normal calls?"
 >
-> **Domain Expert**: "Yes, unless you cache the **Briefing history** to localStorage or send it to the backend. The distinction is: volatile **session state** (briefing history) lives only in memory, while **persistent state** (incident log) survives across reconnects."
+> **Domain Expert**: "Exactly. The 2 calls flow through TRIAGE, RESOURCE, and RELAY in ASSISTED mode. The dispatcher sees them in the call queue, briefings arrive, and the dispatch happens without any HOLD because they're standard assets."
 >
-> **Frontend Dev**: "Now, if we're running a judge demo and we call Demo reset, what happens to the state?"
+> **Frontend Dev**: "Got it. Now, when we trigger **Demo surge**, what happens?"
 >
-> **Domain Expert**: "**Demo reset** clears all state — call queue, incident log, briefing history — and sets **simulator lambda** to 0.1 to enter **demo-quiet mode**. Then **Demo start** injects 2 normal calls. We log each step so the judge audit trail shows the demo sequence. When you trigger **Demo surge**, we inject 4 calls including a heavy asset; that forces RESOURCE to emit a HOLD, demonstrating the **HOLD** protocol."
+> **Domain Expert**: "**Demo surge trigger** injects 4 calls, including one with `force_heavy_asset=True`. This forces the call rate up, MONITOR detects the surge, mode transitions to SURGE, and agents run autonomously. The heavy asset triggers a HOLD, demonstrating the **HOLD protocol** and dispatcher confirmation."
 >
-> **Frontend Dev**: "And the simulator stays quiet during that sequence?"
+> **Frontend Dev**: "In the actual system, can we pause the demo without resetting it? We might want to conserve API credits between runs."
 >
-> **Domain Expert**: "Right. **Demo-quiet mode** keeps **simulator lambda** at 0.1, so background noise is negligible — only about 1 call every 10 minutes. The judge focus is on the injected demo calls, not random background traffic."
+> **Domain Expert**: "Yes! **Demo pause** stops call generation by zeroing out **simulator lambda** and setting `paused: true` in system state. DEMO_PAUSED is broadcast, blocking **_run_pipeline()** execution. To resume, call **Demo resume**, which restores the prior lambda and enables **_run_pipeline()** again. Broadcasts DEMO_RESUMED."
 >
-> **Frontend Dev**: "Got it. So **Demo lifecycle** is the three-step reset-start-surge sequence, and each step is both a UI action and a backend state change?"
+> **Frontend Dev**: "What about the **Live Caller Transcription** feature in ASSISTED mode? How does that differ?"
 >
-> **Domain Expert**: "Exactly. Each step is logged ('Demo reset — all state cleared', etc.), and it affects both the simulator and the system state. The judge demo is deterministic and fully auditable."
+> **Domain Expert**: "In ASSISTED mode, if the dispatcher clicks 'Answer Call', they select a **pre-transcribed scenario** from our data folder — like tesla_accident or wildfire_evacuation. The backend streams the transcript sentence-by-sentence via CALL_UPDATED WS events. Claude Haiku extracts fields every 2 sentences. The call card shows a LIVE badge and expanding transcript panel. It simulates a live caller without needing real STT."
+>
+> **Frontend Dev**: "And in SURGE mode, the dispatcher can initiate a **Surge Voice Session**?"
+>
+> **Domain Expert**: "Exactly. When in SURGE mode, the dispatcher clicks 'Simulate Incoming Call', which opens a VoiceAgentModal. A human — a teammate or judge — speaks to the **ElevenLabs Conversational AI** agent as if they were the caller. The agent uses natural conversation to gather location, type, people affected, and hazards. When the conversation ends, the full transcript goes to `/surge/call/complete`, we re-extract structured fields with Claude Haiku, and feed it into **_run_pipeline()** as if it were a real call."
+>
+> **Frontend Dev**: "So **ElevenLabs Conversational AI** is only for SURGE mode, and **Live Caller Transcription** is only for ASSISTED?"
+>
+> **Domain Expert**: "Correct. The **Tesla / Waymo metaphor** explains it: ASSISTED is like Tesla (human driver + AI copilot co-pilot, using **Live Caller Transcription** to assist), and SURGE is like Waymo (autonomous, using **ElevenLabs Conversational AI** to fully handle calls). Both paths feed into the same **_run_pipeline()** for triage, resource selection, and briefing."
 
 ---
 
 ## Key Relationships
 
+### Core Call Lifecycle
 - A **Call** is created when a caller reports an emergency; it has an initial reported_type and description.
 - TRIAGE converts a **Call** into a classified **Incident** by assigning severity and incident_type.
 - RESOURCE selects units for the **Incident**; if a **heavy asset** is selected, a **HOLD** is created.
 - RELAY generates a **Briefing** once all units are selected; the briefing is delivered to the **Dispatcher**.
 - The **Dispatcher** confirms or cancels any **HOLD** and may issue an **Override** to return to ASSISTED mode.
 - Upon **Briefing** delivery and **HOLD** resolution, the **Incident** is logged to the **incident_log**.
+
+### Assisted Mode vs. Surge Mode
+- In **ASSISTED** mode, the **Dispatcher** makes all decisions; AI provides support only (decision support, transcript analysis, briefing generation).
+- In **SURGE** mode, AI agents operate autonomously until a **Briefing** is ready; **HOLD** still requires dispatcher confirmation.
+- **Live Caller Transcription** is an ASSISTED mode feature: dispatcher selects a **pre-transcribed scenario**, backend streams sentences via CALL_UPDATED, Claude extracts fields incrementally.
+- **Surge Voice Session** is a SURGE mode feature: dispatcher initiates a voice conversation between a human caller and **ElevenLabs Conversational AI**; transcript feeds into **_run_pipeline()** on completion.
+
+### Demo and State Management
+- The **Demo lifecycle** consists of: **Demo reset** (clears state, sets **simulator lambda** to 0.1) → **Demo start** (injects 2 calls) → **Demo surge trigger** (injects 4 calls including heavy asset).
+- **Demo pause** and **Demo resume** allow pausing/resuming call generation without resetting state, conserving API credits.
+- **Demo-quiet mode** (lambda=0.1) keeps background noise negligible (~1 call per 10 minutes) so judge focus remains on scripted demo calls.
+
+### Geography and Vulnerability
 - A **Zone** has a **vulnerability score**; calls in vulnerable zones are flagged as **vulnerable** and prioritized.
-- In **SURGE** mode, AI agents operate autonomously until a **Briefing** is ready; in **ASSISTED** mode, the **Dispatcher** controls all decisions.
+- **CALL_UPDATED** events during **Live Caller Transcription** carry extracted location and hazard fields, enabling zone-based triage during ASSISTED mode call handling.

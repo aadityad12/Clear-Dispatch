@@ -19,6 +19,7 @@ from simulator import simulator_loop
 from ws.hub import manager
 from routers import calls, state_router, override, hold, demo
 from routers import logs_router
+from routers import live_calls, surge_calls
 
 _log = logging.getLogger("signal.main")
 
@@ -73,6 +74,8 @@ app.include_router(override.router)
 app.include_router(hold.router)
 app.include_router(demo.router)
 app.include_router(logs_router.router)
+app.include_router(live_calls.router)
+app.include_router(surge_calls.router)
 
 
 @app.get("/health")

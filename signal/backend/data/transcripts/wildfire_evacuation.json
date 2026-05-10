@@ -1,0 +1,19 @@
+{
+  "id": "wildfire_evacuation",
+  "title": "Family of 4 trapped — fire 2 blocks away",
+  "zone": "YL-05",
+  "lat": 38.61,
+  "lon": -121.83,
+  "incident_type": "evacuation",
+  "audio_hint": "wildfire_evacuation.mp3",
+  "sentences": [
+    "Please help us, we're trapped in our house and there's a wildfire coming.",
+    "We're at 847 Creekside Drive in Woodland, near the park.",
+    "The fire is about two blocks away and moving fast toward us.",
+    "There are four of us — me, my husband, and our two kids aged 6 and 9.",
+    "We tried to leave but the road is blocked by fire trucks and we can't get through.",
+    "My youngest has asthma and is having trouble breathing from the smoke.",
+    "Embers are landing in our backyard and the fence just caught fire.",
+    "We're on the second floor waving from the window, please send someone now."
+  ]
+}

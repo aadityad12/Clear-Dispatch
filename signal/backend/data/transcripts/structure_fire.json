@@ -1,0 +1,18 @@
+{
+  "id": "structure_fire",
+  "title": "Apartment building fire — multiple floors, people on balconies",
+  "zone": "YL-02",
+  "lat": 38.54,
+  "lon": -121.73,
+  "incident_type": "structure_fire",
+  "audio_hint": "structure_fire.mp3",
+  "sentences": [
+    "There's a fire in my apartment building, it's spreading fast.",
+    "I'm at the Riverside Arms complex on 4th Street, building B.",
+    "The fire started on the second floor and I can see flames on the third now.",
+    "There are people on the balconies on floors two through five, they can't get down.",
+    "The stairwell is full of smoke, nobody can use it safely.",
+    "I can hear a woman screaming from the fourth floor balcony.",
+    "At least twenty people are trapped that I can see, probably more inside."
+  ]
+}

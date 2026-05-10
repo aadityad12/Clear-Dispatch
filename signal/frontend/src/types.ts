@@ -15,6 +15,34 @@ export interface Call {
   eta_minutes?: number
   briefing_text?: string
   _t?: number
+  live?: boolean
+  transcript?: string
+  live_fields?: {
+    location?: string
+    one_liner?: string
+    caller_status?: string
+    people_affected?: number
+    hazards?: string[]
+  }
+}
+
+export interface CallUpdatedPayload {
+  id: string
+  final: boolean
+  transcript_snippet?: string
+  severity?: Severity
+  incident_type?: string
+  location?: string
+  one_liner?: string
+  caller_status?: string
+  people_affected?: number
+  hazards?: string[]
+}
+
+export interface SurgeVoiceSession {
+  callId: string
+  status: 'connecting' | 'active' | 'ending' | 'done'
+  transcript: string
 }
 
 export interface AgentState {
@@ -51,6 +79,8 @@ export interface AppState {
   briefings: Briefing[]
   auditLog: AuditEntry[]
   connected: boolean
+  activeTranscript: string | null
+  surgeVoiceSession: SurgeVoiceSession | null
 }
 
 export type WsMessage =
@@ -63,3 +93,6 @@ export type WsMessage =
   | { type: 'HOLD_RESOLVED'; payload: { hold_id: string; action: 'CONFIRMED' | 'CANCELLED' } }
   | { type: 'BRIEFING_READY'; payload: { call_id: string; text: string; audio_url: string | null } }
   | { type: 'INCIDENT_REPORT'; payload: { call_id: string; report: object } }
+  | { type: 'CALL_UPDATED'; payload: CallUpdatedPayload }
+  | { type: 'DEMO_PAUSED'; payload: { timestamp: string } }
+  | { type: 'DEMO_RESUMED'; payload: { timestamp: string } }

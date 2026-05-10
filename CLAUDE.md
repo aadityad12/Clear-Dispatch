@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Human-in-the-loop emergency dispatch support for wildfire surge events. Four AI agents (MONITOR, TRIAGE, RESOURCE, RELAY) assist a 911 dispatcher — never callers. HackDavis 2026.
 
+**Demo narrative**: Assisted Mode = Tesla (human driver, AI co-pilot). Surge Mode = Waymo (fully autonomous AI handles callers, dispatcher approves).
+
 ## Commands
 
 ```bash
@@ -32,16 +34,16 @@ signal/
 │   ├── logger.py         In-memory log ring buffer (500 entries); sanitizes API keys before storing
 │   ├── simulator.py      Poisson call generator; rate controlled by state.simulator_lambda["value"]
 │   ├── agents/           MONITOR, TRIAGE (Claude Haiku), RESOURCE, RELAY (Claude Haiku + ElevenLabs)
-│   ├── routers/          calls, state_router, override, hold, demo, logs_router
+│   ├── routers/          calls, live_calls, surge_calls, state_router, override, hold, demo, logs_router
 │   ├── ws/hub.py         ConnectionManager — all WS events go through manager.broadcast(type, payload)
-│   └── data/             park_fire.geojson, resources.json, vulnerability.json
+│   └── data/             park_fire.geojson, resources.json, vulnerability.json, transcripts/
 └── frontend/             React 18 + Vite + Tailwind CSS
     └── src/
         ├── types.ts              All shared TypeScript types (Mode, Severity, WsMessage, AppState, …)
         ├── store/reducer.ts      Pure reducer — every WS message type handled here, auditLog prepended
         ├── hooks/useWebSocket.ts Auto-reconnecting WS hook (3s retry); StrictMode-safe via isCancelled guard
         └── components/           ModeIndicator, CallQueue, AgentCards, MapView, OverrideButton,
-                                  HoldModal, BriefingPanel, AuditTrail, DemoControls
+                                  HoldModal, BriefingPanel, AuditTrail, DemoControls, VoiceAgentModal
 ```
 
 ### Agent pipeline (per call)
@@ -61,12 +63,12 @@ POST /call
 ### Background tasks (lifespan-managed)
 
 - `monitor_loop()` — every 5s; sliding 60s window on `state.call_timestamps`; ASSISTED→SURGE when rate > threshold, SURGE→ASSISTED after 120s below threshold
-- `simulator_loop()` — exponential inter-arrival from `state.simulator_lambda["value"]` calls/min (default 2.0; demo surge sets 15.0)
+- `simulator_loop()` — exponential inter-arrival from `state.simulator_lambda["value"]` calls/min (default 2.0; demo surge sets 15.0); skips if `state.system_state["paused"]`
 
 ### State shape (`state.py`)
 
 ```python
-system_state = { "mode": "ASSISTED", "surge_threshold": 10, "surge_started_at": None, "call_timestamps": [] }
+system_state = { "mode": "ASSISTED", "surge_threshold": 10, "surge_started_at": None, "call_timestamps": [], "paused": False }
 call_queue: list[dict]          # active calls (all fields including briefing_text, unit_id, eta_minutes)
 incident_log: list[dict]        # completed audit records (appended by RELAY)
 hold_queue: dict[str, dict]     # hold_id → { call_id, unit_id, asset_type, resolved: None|"CONFIRMED"|"CANCELLED" }
@@ -74,6 +76,8 @@ simulator_lambda: dict          # {"value": float} — mutated directly by demo 
 resources: list[dict]           # loaded from data/resources.json; resource["available"] toggled by RESOURCE agent
 vulnerability_data: dict[str, float]   # zone → score; vulnerable flag set when score > 0.6
 fire_perimeter: dict            # GeoJSON for MapView
+live_transcripts: dict[str, str]       # call_id → accumulated transcript (live call feature)
+live_extractions: dict[str, dict]      # call_id → latest Claude-extracted fields (live call feature)
 ```
 
 ### REST endpoints
@@ -87,9 +91,15 @@ fire_perimeter: dict            # GeoJSON for MapView
 | POST | `/override` | Force mode → ASSISTED, append override to incident_log |
 | POST | `/confirm-hold` | Resolve a HOLD_REQUIRED as CONFIRMED |
 | POST | `/cancel-hold` | Resolve a HOLD_REQUIRED as CANCELLED |
+| POST | `/call/start-live` | Start Assisted Mode live call; streams pre-transcribed scenario via WS |
+| POST | `/call/end-live` | End live call; hands off to pipeline |
+| POST | `/surge/call/initiate` | Create a SURGE_VOICE call record; frontend opens voice agent modal |
+| POST | `/surge/call/complete` | Receive conversation transcript; Claude extracts fields; runs pipeline |
 | POST | `/demo/reset` | Clear all state; reset lambda to 0.1; broadcast MODE_CHANGE + 4× AGENT_STATUS IDLE |
 | POST | `/demo/start` | Inject 2 normal calls (2s apart) |
 | POST | `/demo/trigger-surge` | Set SURGE + lambda=15; inject 4 calls (4th has `force_heavy_asset=True`) |
+| POST | `/demo/pause` | Pause simulator + block pipeline; lambda→0, paused→True |
+| POST | `/demo/resume` | Resume simulator + unblock pipeline; lambda→2.0, paused→False |
 | GET | `/logs` | In-memory log buffer; `?level=INFO\|WARNING\|ERROR&limit=200` |
 
 ### Logging
@@ -98,7 +108,7 @@ fire_perimeter: dict            # GeoJSON for MapView
 - `CALL [id] zone=… SEVERITY type [VULNERABLE] — triage reasoning` (INFO, from `calls.py` after triage)
 - `BRIEFING [id] <briefing sentence>` (INFO, from `relay.py`)
 
-Mode transitions log as WARNING. All `ANTHROPIC_API_KEY` / `ELEVENLABS_API_KEY` values are redacted before storage.
+Mode transitions and pause/resume log as WARNING. All `ANTHROPIC_API_KEY` / `ELEVENLABS_API_KEY` values are redacted before storage.
 
 ## Shared Contract — Do Not Deviate
 
@@ -127,7 +137,13 @@ HOLD_REQUIRED   { call_id, unit_id, asset_type, hold_id }
 HOLD_RESOLVED   { hold_id, action: "CONFIRMED"|"CANCELLED" }
 BRIEFING_READY  { call_id, text, audio_url }
 INCIDENT_REPORT { call_id, report }
+CALL_UPDATED    { id, final, transcript_snippet?, severity?, incident_type?, location?,
+                  one_liner?, caller_status?, people_affected?, hazards? }
+DEMO_PAUSED     { timestamp }
+DEMO_RESUMED    { timestamp }
 ```
+
+**IMPORTANT**: `reducer.ts` must always have a `default: return state` in `handleMessage`. Any unhandled WS message type without a default wipes all React state.
 
 ## Environment Variables
 
@@ -136,8 +152,8 @@ INCIDENT_REPORT { call_id, report }
 | Variable | Required | Default | Notes |
 |---|---|---|---|
 | `ANTHROPIC_API_KEY` | Yes | — | TRIAGE + RELAY agents |
-| `ELEVENLABS_API_KEY` | No | — | Text-only mode if absent |
-| `ELEVENLABS_VOICE_ID` | No | `21m00Tcm4TlvDq8ikWAM` | |
+| `ELEVENLABS_API_KEY` | Yes | — | TTS briefings + Conversational AI |
+| `ELEVENLABS_VOICE_ID` | No | `21m00Tcm4TlvDq8ikWAM` | Briefing TTS voice |
 | `SURGE_THRESHOLD` | No | `10` | calls/min to trigger Surge Mode |
 
 **`signal/frontend/.env`** (create if missing)
@@ -152,28 +168,31 @@ VITE_WS_URL=ws://localhost:8000/ws
 3. `reducer.ts` handles every message type — updates `calls`, `agents`, `activeHold`, `briefings`, `auditLog`
 4. `BRIEFING_READY` also triggers `new Audio(audio_url).play()` in `App.tsx`; autoplay block falls back to a manual play button
 5. Agent card flash animation: `App.tsx` tracks previous agent statuses with `useRef`, sets a 600ms flash flag when any agent transitions into `RUNNING`
+6. `CALL_UPDATED` appends transcript snippet to `call.transcript`, merges extracted fields into `call.live_fields`, shows LIVE badge on card
 
 ## Demo flow (for judges)
 
-Reset → Start Demo (2 normal calls, ASSISTED) → Trigger Surge (SURGE banner, 4 auto-triaged calls) → voice briefing or text fallback → Protocol HOLD modal on heavy asset → dispatcher confirms → Override → Audit Trail.
+Reset → Start Demo (2 normal calls, ASSISTED) → Answer Call (pick scenario, watch live transcript stream in) → End Call (pipeline runs) → Trigger Surge (SURGE banner, 4 auto-triaged calls) → Simulate Incoming Call (ElevenLabs voice agent, judge/teammate speaks as caller) → voice briefing → Protocol HOLD modal on heavy asset → dispatcher confirms → Override → Audit Trail.
 
-## Optional Features (post-MVP, implement only if time permits)
+**Pause** button stops all API spend instantly (simulator off, pipeline blocked). **Resume** restores it.
 
-<!-- These were scoped and designed during /grill-me but deferred to keep the demo MVP tight. -->
-<!-- To implement one, tell Claude: "implement the optional feature: <name>" -->
+## Pre-Transcribed Scenarios (`data/transcripts/`)
 
-### 1. Assisted Mode — Live Caller Transcription
-Dispatcher clicks "Answer Call" → browser MediaRecorder captures audio in 4s chunks → `POST /call/audio-chunk` → ElevenLabs Scribe STT → incremental Claude Haiku extraction → `CALL_UPDATED` WS event → live-updating info card in CallQueue with LIVE badge and transcript snippet. Ends with `POST /call/end-live` which feeds into the existing resource + relay pipeline.
-- New state: `live_transcripts: dict[str,str]`, `live_extractions: dict[str,dict]`
-- New endpoints: `POST /call/start-live`, `POST /call/audio-chunk`, `POST /call/end-live`
-- New WS event: `CALL_UPDATED { id, final, transcript_snippet, severity?, incident_type?, location?, one_liner?, caller_status?, people_affected?, hazards?, structure_type? }`
-- Button visible only in ASSISTED mode
+Five JSON files used by Assisted Mode live call feature. Each has `id`, `title`, `zone`, `lat`, `lon`, `incident_type`, `sentences[]`. Backend streams sentences 1.5s apart and runs Claude Haiku extraction every 2 sentences.
 
-### 2. Surge Mode — ElevenLabs Conversational Voice Agent
-When in SURGE, an autonomous ElevenLabs Conversational AI agent answers overflow calls. Browser uses `@11labs/client` SDK directly (no backend WS proxy needed). Backend endpoints `POST /surge/call/initiate` and `POST /surge/call/complete` create call records and feed collected data into the existing triage/resource/relay pipeline. Requires `ELEVENLABS_SURGE_AGENT_ID` and `ELEVENLABS_SURGE_VOICE_ID` env vars configured in the ElevenLabs dashboard first.
-- New env: `ELEVENLABS_SURGE_AGENT_ID`, `ELEVENLABS_SURGE_VOICE_ID` (backend + frontend)
-- "Simulate Incoming Call" button in DemoControls, visible only in SURGE mode
-- Expandable CallQueue cards with compact/expanded views; CRITICAL or in_danger cards auto-expand
+| File | Scenario |
+|---|---|
+| `tesla_accident.json` | Multi-vehicle accident, Highway 99, airbag deployed |
+| `wildfire_evacuation.json` | Family of 4 trapped, fire approaching |
+| `structure_fire.json` | Apartment fire, multiple floors, people on balconies |
+| `medical_elderly.json` | 78-year-old collapsed, possible stroke |
+| `hazmat_spill.json` | Chemical tanker near elementary school |
+
+## ElevenLabs Conversational AI Agent
+
+Agent name: **Signal** | Agent ID: `agent_1701kr8n4kw9fr9aapm59ca3edg8`
+
+Frontend uses `@elevenlabs/react` `useConversation` hook with `connectionType: 'webrtc'`. Full conversation transcript is sent to `POST /surge/call/complete`; Claude Haiku re-extracts structured fields server-side.
 
 ## Agents & Skills Available
 

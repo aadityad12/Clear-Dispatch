@@ -1,0 +1,18 @@
+{
+  "id": "medical_elderly",
+  "title": "Elderly person collapsed — possible stroke, caregiver calling",
+  "zone": "YL-07",
+  "lat": 38.69,
+  "lon": -121.58,
+  "incident_type": "medical",
+  "audio_hint": "medical_elderly.mp3",
+  "sentences": [
+    "I need an ambulance right away, my patient has collapsed.",
+    "I'm his home caregiver, we're at 1203 Linden Avenue, it's a single-story house.",
+    "He's 78 years old and he just collapsed in the kitchen while we were talking.",
+    "He's breathing but barely responding, his face looks droopy on the left side.",
+    "I think he might be having a stroke, his speech was slurred before he went down.",
+    "He has a history of high blood pressure and atrial fibrillation.",
+    "I put him in the recovery position and I'm staying with him now, please hurry."
+  ]
+}

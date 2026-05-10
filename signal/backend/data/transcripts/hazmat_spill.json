@@ -1,0 +1,18 @@
+{
+  "id": "hazmat_spill",
+  "title": "Chemical truck overturned near school — fumes visible",
+  "zone": "YL-01",
+  "lat": 38.49,
+  "lon": -121.77,
+  "incident_type": "hazmat",
+  "audio_hint": "hazmat_spill.mp3",
+  "sentences": [
+    "A big tanker truck has overturned on the road and there's something leaking out.",
+    "This is on Covell Boulevard, right in front of Pioneer Elementary School.",
+    "I can see a yellowish cloud coming from the back of the truck.",
+    "It smells terrible out here, kind of like chlorine, my eyes are burning.",
+    "The school is letting kids out right now and they're walking right toward it.",
+    "The truck driver is out of the cab and he's yelling that it's industrial chemicals.",
+    "People are already coughing and some kids are sitting down on the ground."
+  ]
+}

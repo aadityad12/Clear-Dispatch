@@ -37,6 +37,9 @@ async def simulator_loop():
             "description": random.choice(DESCRIPTIONS),
         }
 
+        if state.system_state.get("paused"):
+            continue
+
         async with httpx.AsyncClient() as client:
             try:
                 await client.post("http://localhost:8000/call", json=call_data, timeout=5)

@@ -22,6 +22,8 @@ async def demo_reset():
     state.call_queue.clear()
     state.incident_log.clear()
     state.hold_queue.clear()
+    state.live_transcripts.clear()
+    state.live_extractions.clear()
     state.simulator_lambda["value"] = 0.1
 
     for r in state.resources:
@@ -128,3 +130,23 @@ async def demo_trigger_surge():
 
     _log.warning("Demo surge triggered — 4 calls injected, heavy asset included")
     return {"ok": True, "message": "Surge triggered — 4 calls injected, heavy asset call included"}
+
+
+@router.post("/pause")
+async def demo_pause():
+    state.system_state["paused"] = True
+    state.simulator_lambda["value"] = 0.0
+    now = datetime.now(timezone.utc).isoformat()
+    await manager.broadcast("DEMO_PAUSED", {"timestamp": now})
+    _log.warning("Demo paused — API calls and simulator suspended")
+    return {"ok": True, "paused": True}
+
+
+@router.post("/resume")
+async def demo_resume():
+    state.system_state["paused"] = False
+    state.simulator_lambda["value"] = 2.0
+    now = datetime.now(timezone.utc).isoformat()
+    await manager.broadcast("DEMO_RESUMED", {"timestamp": now})
+    _log.warning("Demo resumed — simulator restored to 2.0 calls/min")
+    return {"ok": True, "paused": False}

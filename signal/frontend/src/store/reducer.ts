@@ -15,6 +15,8 @@ export const initialState: AppState = {
   briefings: [],
   auditLog: [],
   connected: false,
+  activeTranscript: null,
+  surgeVoiceSession: null,
 }
 
 export type Action =
@@ -110,5 +112,33 @@ function handleMessage(state: AppState, msg: WsMessage): AppState {
         ...state,
         auditLog: [{ timestamp: now, type: 'INCIDENT_REPORT', summary: `Report filed for call ${msg.payload.call_id}` }, ...state.auditLog],
       }
+    case 'CALL_UPDATED': {
+      const p = msg.payload
+      const calls = state.calls.map((c) => {
+        if (c.id !== p.id) return c
+        const updatedTranscript = p.transcript_snippet
+          ? (c.transcript ? c.transcript + ' ' + p.transcript_snippet : p.transcript_snippet)
+          : c.transcript
+        const updatedLiveFields = {
+          ...c.live_fields,
+          ...(p.location != null ? { location: p.location } : {}),
+          ...(p.one_liner != null ? { one_liner: p.one_liner } : {}),
+          ...(p.caller_status != null ? { caller_status: p.caller_status } : {}),
+          ...(p.people_affected != null ? { people_affected: p.people_affected } : {}),
+          ...(p.hazards != null ? { hazards: p.hazards } : {}),
+        }
+        const updatedSeverity = (p.severity && p.severity !== 'PENDING') ? p.severity : c.severity
+        return {
+          ...c,
+          live: true,
+          transcript: updatedTranscript,
+          live_fields: updatedLiveFields,
+          severity: updatedSeverity,
+        }
+      })
+      return { ...state, calls }
+    }
+    default:
+      return state
   }
 }

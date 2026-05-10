@@ -1,0 +1,18 @@
+{
+  "id": "tesla_accident",
+  "title": "Tesla driver — multi-vehicle accident",
+  "zone": "YL-03",
+  "lat": 39.72,
+  "lon": -121.62,
+  "incident_type": "medical",
+  "audio_hint": "tesla_accident.mp3",
+  "sentences": [
+    "Hello, I need help, I've been in an accident.",
+    "I'm on Highway 99 near Yuba City, I think around mile marker 42.",
+    "My car hit another vehicle, my airbag deployed.",
+    "I'm conscious but I have pain in my chest and left arm.",
+    "There's another car involved, I can see the driver is slumped over.",
+    "My Tesla is sending you my exact GPS coordinates right now.",
+    "Please hurry, there's smoke coming from the other car."
+  ]
+}
