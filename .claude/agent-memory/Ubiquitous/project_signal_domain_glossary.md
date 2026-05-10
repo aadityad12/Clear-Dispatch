@@ -1,12 +1,12 @@
 ---
-name: SIGNAL domain glossary
-description: Canonical ubiquitous language for SIGNAL emergency dispatch system — covers modes, actors, agents, calls/incidents, resources, HOLD protocol, and briefings
+name: Clear Dispatch domain glossary
+description: Canonical ubiquitous language for Clear Dispatch emergency dispatch system — covers modes, actors, agents, calls/incidents, resources, HOLD protocol, and briefings
 type: reference
 ---
 
 ## Domain Overview
 
-**SIGNAL** (Surge-Intelligent Guard Network for Alert & Logistics) is a human-in-the-loop emergency dispatch support system for wildfire surge events. The system operates in two modes (ASSISTED vs SURGE) and uses four AI agents (MONITOR, TRIAGE, RESOURCE, RELAY) to support dispatcher decision-making.
+**Clear Dispatch** is a human-in-the-loop emergency dispatch support system for wildfire surge events. The system operates in two modes (ASSISTED vs SURGE) and uses four AI agents (MONITOR, TRIAGE, RESOURCE, RELAY) to support dispatcher decision-making.
 
 ## Key Canonical Terms
 

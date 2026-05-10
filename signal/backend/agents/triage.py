@@ -8,7 +8,7 @@ import anthropic
 import state
 from ws.hub import manager
 
-_log = logging.getLogger("signal.triage")
+_log = logging.getLogger("clear_dispatch.triage")
 
 _client = anthropic.AsyncAnthropic()
 

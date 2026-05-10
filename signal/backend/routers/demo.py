@@ -7,7 +7,7 @@ from fastapi import APIRouter
 import state
 from ws.hub import manager
 
-_log = logging.getLogger("signal.demo")
+_log = logging.getLogger("clear_dispatch.demo")
 
 router = APIRouter(prefix="/demo")
 

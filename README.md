@@ -1,4 +1,4 @@
-# SIGNAL — Surge-Intelligent Guard Network for Alert & Logistics
+# Clear Dispatch
 
 **Human-in-the-loop emergency dispatch support for wildfire surge events.**
 
@@ -14,13 +14,13 @@ Built at **HackDavis 2026**.
 
 During a major wildfire, a single 911 dispatch center can receive dozens of calls per minute. A human dispatcher can handle one caller at a time. The backlog grows. Triage decisions get made under pressure with incomplete information. Heavy assets get deployed incorrectly.
 
-SIGNAL keeps the dispatcher in control while AI handles the coordination layer.
+Clear Dispatch keeps the dispatcher in control while AI handles the coordination layer.
 
 ---
 
 ## Two Modes
 
-SIGNAL operates in one of two modes, switching automatically based on call volume:
+Clear Dispatch operates in one of two modes, switching automatically based on call volume:
 
 **Assisted Mode** — *Tesla Autopilot*
 The dispatcher handles calls normally. AI agents run in the background: classifying severity, finding the nearest available unit, and preparing a voice briefing — but the dispatcher owns every decision.

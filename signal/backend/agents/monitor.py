@@ -5,7 +5,7 @@ from datetime import datetime, timezone, timedelta
 import state
 from ws.hub import manager
 
-_log = logging.getLogger("signal.monitor")
+_log = logging.getLogger("clear_dispatch.monitor")
 
 
 def _parse_ts(ts: str) -> datetime:

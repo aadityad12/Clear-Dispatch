@@ -13,7 +13,7 @@ from pydantic import BaseModel
 import state
 from ws.hub import manager
 
-_log = logging.getLogger("signal.surge_calls")
+_log = logging.getLogger("clear_dispatch.surge_calls")
 
 _client = anthropic.AsyncAnthropic()
 

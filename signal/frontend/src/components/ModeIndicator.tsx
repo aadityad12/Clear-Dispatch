@@ -11,7 +11,7 @@ export default function ModeIndicator({ mode, connected }: Props) {
   return (
     <div className={`mode-header ${isSurge ? 'surge' : 'assisted'}`} role="banner">
       <div className="left">
-        <div className="brand">SIGNAL</div>
+        <div className="brand">CLEAR DISPATCH</div>
         {isSurge ? (
           <>
             <span className="surge-pulse" />

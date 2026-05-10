@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 
 load_dotenv()
 
-import logger  # must import before any other signal modules to set up the handler
+import logger  # must import before any other clear_dispatch modules to set up the handler
 
 import state
 from agents.monitor import monitor_loop
@@ -21,7 +21,7 @@ from routers import calls, state_router, override, hold, demo
 from routers import logs_router
 from routers import live_calls, surge_calls
 
-_log = logging.getLogger("signal.main")
+_log = logging.getLogger("clear_dispatch.main")
 
 
 @asynccontextmanager
@@ -42,19 +42,19 @@ async def lifespan(app: FastAPI):
 
     monitor_task = asyncio.create_task(monitor_loop())
     simulator_task = asyncio.create_task(simulator_loop())
-    _log.info("SIGNAL backend started — mode=%s threshold=%d",
+    _log.info("Clear Dispatch backend started — mode=%s threshold=%d",
               state.system_state["mode"], state.system_state["surge_threshold"])
 
     yield
 
     monitor_task.cancel()
     simulator_task.cancel()
-    _log.info("SIGNAL backend shutting down")
+    _log.info("Clear Dispatch backend shutting down")
 
 
 os.makedirs("audio", exist_ok=True)
 
-app = FastAPI(title="SIGNAL Backend", lifespan=lifespan)
+app = FastAPI(title="Clear Dispatch Backend", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

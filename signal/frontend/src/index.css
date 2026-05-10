@@ -194,6 +194,7 @@ body {
 }
 
 .call-row1 { display: flex; align-items: center; gap: 8px; }
+.call-id { font-size: 11px; color: var(--text-secondary); font-family: var(--ui-mono); }
 .call-vuln { color: var(--accent-warning); font-size: 12px; cursor: help; }
 .call-incident { font-size: 14px; font-weight: 500; color: var(--text-primary); }
 .call-zone { font-size: 11px; color: var(--text-secondary); font-family: var(--ui-mono); }

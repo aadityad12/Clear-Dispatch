@@ -17,7 +17,7 @@ export default function VoiceAgentModal({ callId, onComplete, onDismiss }: Props
 
   const conversation = useConversation({
     onMessage: ({ message, source }: { message: string; source: 'ai' | 'user' }) => {
-      const speaker = source === 'ai' ? '[SIGNAL]' : '[CALLER]'
+      const speaker = source === 'ai' ? '[CLEAR DISPATCH]' : '[CALLER]'
       setTranscript((t) => t + `${speaker}: ${message}\n`)
     },
     onError: (error: unknown) => {
@@ -68,7 +68,7 @@ export default function VoiceAgentModal({ callId, onComplete, onDismiss }: Props
   const statusLabel =
     conversation.status === 'connected'
       ? conversation.isSpeaking
-        ? 'SIGNAL speaking…'
+        ? 'Clear Dispatch speaking…'
         : 'Connected — listening'
       : conversation.status === 'connecting'
       ? 'Connecting…'
@@ -176,9 +176,9 @@ export default function VoiceAgentModal({ callId, onComplete, onDismiss }: Props
           >
             {transcript
               ? transcript.split('\n').filter(Boolean).map((line, i) => {
-                  const isSignal = line.startsWith('[SIGNAL]')
+                  const isClearDispatch = line.startsWith('[CLEAR DISPATCH]')
                   return (
-                    <div key={i} style={{ color: isSignal ? '#ef4444' : '#e5e7eb', marginBottom: 2 }}>
+                    <div key={i} style={{ color: isClearDispatch ? '#ef4444' : '#e5e7eb', marginBottom: 2 }}>
                       {line}
                     </div>
                   )

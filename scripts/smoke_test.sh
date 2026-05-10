@@ -14,7 +14,7 @@ pass() { echo -e "    ${GREEN}PASS${NC} $1"; }
 fail() { echo -e "    ${RED}FAIL${NC} $1"; exit 1; }
 info() { echo -e "    ${YELLOW}INFO${NC} $1"; }
 
-echo "=== SIGNAL Smoke Test ==="
+echo "=== Clear Dispatch Smoke Test ==="
 echo ""
 
 # 1. Wait for backend

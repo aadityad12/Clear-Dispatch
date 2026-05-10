@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project: SIGNAL
+## Project: Clear Dispatch
 
 Human-in-the-loop emergency dispatch support for wildfire surge events. Four AI agents (MONITOR, TRIAGE, RESOURCE, RELAY) assist a 911 dispatcher — never callers. HackDavis 2026.
 

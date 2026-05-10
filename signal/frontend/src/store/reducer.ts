@@ -15,6 +15,8 @@ export const initialState: AppState = {
   briefings: [],
   auditLog: [],
   connected: false,
+  activeTranscript: null,
+  surgeVoiceSession: null,
 }
 
 export type Action =
@@ -129,6 +131,9 @@ function handleMessage(state: AppState, msg: WsMessage): AppState {
       const normalizedHazards = p.hazards != null
         ? (Array.isArray(p.hazards) ? p.hazards : [String(p.hazards)].filter(Boolean))
         : undefined
+      const normalizedServiceTypes = p.service_types != null
+        ? (Array.isArray(p.service_types) ? p.service_types : [String(p.service_types)].filter(Boolean))
+        : undefined
       const calls = state.calls.map((c) => {
         if (c.id !== p.id) return c
         const updatedTranscript = p.transcript_snippet
@@ -141,6 +146,10 @@ function handleMessage(state: AppState, msg: WsMessage): AppState {
           ...(p.caller_status != null ? { caller_status: p.caller_status } : {}),
           ...(p.people_affected != null ? { people_affected: Number(p.people_affected) || undefined } : {}),
           ...(normalizedHazards != null ? { hazards: normalizedHazards } : {}),
+          ...(p.sex != null ? { sex: p.sex } : {}),
+          ...(p.age != null ? { age: p.age } : {}),
+          ...(p.advice != null ? { advice: p.advice } : {}),
+          ...(normalizedServiceTypes != null ? { service_types: normalizedServiceTypes } : {}),
         }
         const updatedSeverity = (p.severity && p.severity !== 'PENDING') ? p.severity : c.severity
         return {
@@ -149,6 +158,7 @@ function handleMessage(state: AppState, msg: WsMessage): AppState {
           transcript: updatedTranscript,
           live_fields: updatedLiveFields,
           severity: updatedSeverity,
+          ...(p.call_status != null ? { call_status: p.call_status } : {}),
         }
       })
       return { ...state, calls }

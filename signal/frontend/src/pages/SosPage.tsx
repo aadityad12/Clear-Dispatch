@@ -18,7 +18,7 @@ export default function SosPage() {
 
   const conversation = useConversation({
     onMessage: ({ message, source }: { message: string; source: 'ai' | 'user' }) => {
-      const speaker = source === 'ai' ? '[SIGNAL]' : '[CALLER]'
+      const speaker = source === 'ai' ? '[CLEAR DISPATCH]' : '[CALLER]'
       transcriptRef.current += `${speaker}: ${message}\n`
     },
     onError: (error: unknown) => {

@@ -9,7 +9,7 @@ from pydantic import BaseModel
 import state
 from ws.hub import manager
 
-_log = logging.getLogger("signal.calls")
+_log = logging.getLogger("clear_dispatch.calls")
 
 router = APIRouter()
 

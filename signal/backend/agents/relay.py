@@ -8,7 +8,7 @@ import httpx
 import state
 from ws.hub import manager
 
-_log = logging.getLogger("signal.relay")
+_log = logging.getLogger("clear_dispatch.relay")
 
 _client = anthropic.AsyncAnthropic()
 

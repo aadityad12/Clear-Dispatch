@@ -1,4 +1,4 @@
-# Ubiquitous Language — SIGNAL
+# Ubiquitous Language — Clear Dispatch
 
 A human-in-the-loop emergency dispatch support system for wildfire surge events. The AI never speaks to callers — only to the dispatcher. This glossary formalizes domain terminology used across backend, frontend, and integration layers.
 

@@ -6,7 +6,7 @@ import uuid
 import state
 from ws.hub import manager
 
-_log = logging.getLogger("signal.resource")
+_log = logging.getLogger("clear_dispatch.resource")
 
 HEAVY_ASSET_TYPES = {"air_tanker", "heavy_rescue", "hazmat"}
 
