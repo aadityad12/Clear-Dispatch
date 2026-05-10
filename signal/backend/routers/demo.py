@@ -19,7 +19,7 @@ async def demo_reset():
     state.call_queue.clear()
     state.incident_log.clear()
     state.hold_queue.clear()
-    state.simulator_lambda["value"] = 2.0
+    state.simulator_lambda["value"] = 0.1
 
     for r in state.resources:
         r["available"] = True
