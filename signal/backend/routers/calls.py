@@ -57,6 +57,8 @@ async def process_call(call_data: dict) -> dict:
         "zone": call["zone"],
         "vulnerable": False,
         "incident_type": call["reported_type"],
+        "lat": call["lat"],
+        "lon": call["lon"],
     })
 
     asyncio.create_task(_run_pipeline(call))
@@ -88,6 +90,8 @@ async def _run_pipeline(call: dict) -> None:
         "zone": triage.zone,
         "vulnerable": triage.vulnerable,
         "incident_type": triage.incident_type,
+        "lat": call["lat"],
+        "lon": call["lon"],
     })
 
     resource_result = await resource_agent(call, triage)

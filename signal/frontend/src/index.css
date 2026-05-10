@@ -527,3 +527,25 @@ button:focus-visible, [tabindex]:focus-visible {
   outline: 2px solid #60a5fa;
   outline-offset: 2px;
 }
+
+/* ───────── Call map markers ───────── */
+.call-critical-icon.leaflet-div-icon {
+  background: transparent !important;
+  border: none !important;
+}
+@keyframes call-ping {
+  0%   { box-shadow: 0 0 0 0    rgba(220, 38, 38, 0.7); }
+  70%  { box-shadow: 0 0 0 12px rgba(220, 38, 38, 0);   }
+  100% { box-shadow: 0 0 0 0    rgba(220, 38, 38, 0);   }
+}
+.call-show-map {
+  font-size: 11px;
+  color: #60a5fa;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  margin-top: 2px;
+  display: block;
+}
+.call-show-map:hover { text-decoration: underline; }

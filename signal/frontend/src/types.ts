@@ -9,6 +9,8 @@ export interface Call {
   zone: string
   vulnerable: boolean
   incident_type: string
+  lat?: number
+  lon?: number
   unit_id?: string
   eta_minutes?: number
   briefing_text?: string
@@ -53,7 +55,7 @@ export interface AppState {
 
 export type WsMessage =
   | { type: 'MODE_CHANGE'; payload: { mode: Mode; timestamp: string } }
-  | { type: 'CALL_ADDED'; payload: { id: string; severity: Severity; zone: string; vulnerable: boolean; incident_type: string } }
+  | { type: 'CALL_ADDED'; payload: { id: string; severity: Severity; zone: string; vulnerable: boolean; incident_type: string; lat?: number; lon?: number } }
   | { type: 'AGENT_STATUS'; payload: { agent: AgentName; status: AgentStatus; last_action: string } }
   | { type: 'UNIT_DISPATCHED'; payload: { call_id: string; unit_id: string; eta_minutes: number } }
   | { type: 'HOLD_REQUIRED'; payload: HoldEvent }

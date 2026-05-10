@@ -5,7 +5,7 @@ import { WsMessage, AgentName } from './types'
 import ModeIndicator from './components/ModeIndicator'
 import AgentCards from './components/AgentCards'
 import CallQueue from './components/CallQueue'
-import MapView from './components/MapView'
+import MapView, { MapHandle } from './components/MapView'
 import OverrideButton from './components/OverrideButton'
 import HoldModal from './components/HoldModal'
 import BriefingPanel from './components/BriefingPanel'
@@ -18,6 +18,7 @@ export default function App() {
   const [pendingAudioUrl, setPendingAudioUrl] = useState<string | null>(null)
   const [agentFlash, setAgentFlash] = useState<Record<string, boolean>>({})
   const prevAgentsRef = useRef(state.agents)
+  const mapRef = useRef<MapHandle>(null)
 
   // Flash agent cards when transitioning into RUNNING
   useEffect(() => {
@@ -77,8 +78,11 @@ export default function App() {
       <ModeIndicator mode={state.mode} connected={state.connected} />
 
       <div className="main-grid">
-        <CallQueue calls={state.calls} />
-        <MapView calls={state.calls} />
+        <CallQueue
+          calls={state.calls}
+          onShowOnMap={(lat, lon) => mapRef.current?.flyTo(lat, lon)}
+        />
+        <MapView ref={mapRef} calls={state.calls} mode={state.mode} />
         <div className="right-col">
           <AgentCards agents={state.agents} flashing={agentFlash} />
           <BriefingPanel

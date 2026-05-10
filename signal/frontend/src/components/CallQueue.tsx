@@ -3,11 +3,12 @@ import { Call, Severity } from '../types'
 
 interface Props {
   calls: Call[]
+  onShowOnMap?: (lat: number, lon: number) => void
 }
 
 const SEV_RANK: Record<Severity, number> = { CRITICAL: 0, URGENT: 1, STANDARD: 2, PENDING: 3 }
 
-export default function CallQueue({ calls }: Props) {
+export default function CallQueue({ calls, onShowOnMap }: Props) {
   const sorted = useMemo(() => {
     return [...calls].sort((a, b) => {
       const r = SEV_RANK[a.severity] - SEV_RANK[b.severity]
@@ -47,6 +48,14 @@ export default function CallQueue({ calls }: Props) {
                     <span className="dot" />
                     <span>Unit {call.unit_id} · ETA {call.eta_minutes} min</span>
                   </div>
+                )}
+                {call.lat != null && onShowOnMap && (
+                  <button
+                    className="call-show-map"
+                    onClick={() => onShowOnMap(call.lat!, call.lon!)}
+                  >
+                    ↗ Show on map
+                  </button>
                 )}
               </div>
             ))}
