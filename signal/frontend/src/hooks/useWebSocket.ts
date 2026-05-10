@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef } from 'react'
 import { WsMessage } from '../types'
 
 export function useWebSocket(
@@ -9,32 +9,44 @@ export function useWebSocket(
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectTimeout = useRef<ReturnType<typeof setTimeout>>()
 
-  const connect = useCallback(() => {
-    const url = import.meta.env.VITE_WS_URL || 'ws://localhost:8000/ws'
-    const ws = new WebSocket(url)
-    wsRef.current = ws
+  useEffect(() => {
+    // Each effect invocation gets its own isCancelled — when cleanup sets it
+    // true, the old socket's async onclose skips scheduling a new connection.
+    // Without this, React StrictMode's mount→cleanup→remount cycle leaves a
+    // ghost reconnect timer that opens a second connection, causing every WS
+    // broadcast to be dispatched twice.
+    let isCancelled = false
 
-    ws.onopen = () => onConnect()
-    ws.onclose = () => {
-      onDisconnect()
-      reconnectTimeout.current = setTimeout(connect, 3000)
-    }
-    ws.onerror = () => ws.close()
-    ws.onmessage = (event) => {
-      try {
-        const msg = JSON.parse(event.data) as WsMessage
-        onMessage(msg)
-      } catch {
-        // silently ignore malformed messages
+    function connect() {
+      if (isCancelled) return
+      const url = import.meta.env.VITE_WS_URL || 'ws://localhost:8000/ws'
+      const ws = new WebSocket(url)
+      wsRef.current = ws
+
+      ws.onopen = () => onConnect()
+      ws.onclose = () => {
+        onDisconnect()
+        if (!isCancelled) {
+          reconnectTimeout.current = setTimeout(connect, 3000)
+        }
+      }
+      ws.onerror = () => ws.close()
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data) as WsMessage
+          onMessage(msg)
+        } catch {
+          // ignore malformed messages
+        }
       }
     }
-  }, [onMessage, onConnect, onDisconnect])
 
-  useEffect(() => {
     connect()
+
     return () => {
+      isCancelled = true
       clearTimeout(reconnectTimeout.current)
       wsRef.current?.close()
     }
-  }, [connect])
+  }, [onMessage, onConnect, onDisconnect])
 }
