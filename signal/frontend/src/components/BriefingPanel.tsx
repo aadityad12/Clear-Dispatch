@@ -1,40 +1,36 @@
 interface Props {
-  briefing: { text: string; audio_url: string | null } | null
-  onPlayAudio?: () => void
+  briefing: { call_id?: string; text: string; audio_url: string | null } | null
   audioBlocked?: boolean
+  onPlayAudio?: () => void
 }
 
-export default function BriefingPanel({ briefing, onPlayAudio, audioBlocked }: Props) {
+export default function BriefingPanel({ briefing, audioBlocked, onPlayAudio }: Props) {
   return (
-    <div className="bg-white border border-slate-200 shadow-sm rounded-lg p-4">
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-slate-400">🔈</span>
-        <span className="font-semibold text-slate-900 text-sm">Latest Briefing</span>
+    <div className="panel" style={{ flex: 1, minHeight: 0 }}>
+      <div className="panel-title">
+        <span>🔊 Latest Briefing</span>
+        {briefing && <span className="briefing-callid">{briefing.call_id ?? ''}</span>}
       </div>
-
-      {briefing === null ? (
-        <p className="text-slate-400 text-sm">No briefings yet</p>
-      ) : (
-        <div className="space-y-3">
-          <p className="font-medium text-slate-900 text-base leading-snug">{briefing.text}</p>
-
-          {briefing.audio_url !== null && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full">
-                🔊 Audio available
-              </span>
-              {audioBlocked && onPlayAudio && (
-                <button
-                  onClick={onPlayAudio}
-                  className="text-xs text-blue-600 underline"
-                >
-                  ▶ Play briefing
-                </button>
+      <div className="panel-body">
+        {!briefing ? (
+          <div className="empty-state" style={{ padding: 24 }}>
+            <div style={{ fontSize: 28, opacity: 0.4 }}>🎙</div>
+            <div style={{ fontSize: 12 }}>No briefings yet</div>
+          </div>
+        ) : (
+          <div className="briefing-body">
+            <div className="briefing-text">{briefing.text}</div>
+            <div className="briefing-meta">
+              {briefing.audio_url !== null && !audioBlocked && (
+                <span className="audio-badge">🔊 Audio available</span>
+              )}
+              {briefing.audio_url !== null && audioBlocked && onPlayAudio && (
+                <button className="play-button" onClick={onPlayAudio}>▶ Play Briefing</button>
               )}
             </div>
-          )}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

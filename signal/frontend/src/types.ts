@@ -12,6 +12,7 @@ export interface Call {
   unit_id?: string
   eta_minutes?: number
   briefing_text?: string
+  _t?: number
 }
 
 export interface AgentState {

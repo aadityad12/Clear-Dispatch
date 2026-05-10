@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { AuditEntry } from '../types'
 
 interface Props {
@@ -6,39 +6,50 @@ interface Props {
 }
 
 export default function AuditTrail({ entries }: Props) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(true)
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'a' || e.key === 'A') {
+        const tag = (e.target as HTMLElement).tagName
+        if (tag === 'INPUT' || tag === 'TEXTAREA') return
+        setOpen((v) => !v)
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [])
 
   return (
-    <div className="bg-white border-t border-slate-200">
-      <button
+    <div className="audit-bar">
+      <div
+        className="audit-head"
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-6 py-3 text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+        role="button"
+        tabIndex={0}
+        aria-expanded={open}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen((v) => !v) } }}
       >
-        <span className="font-semibold">
-          Audit Trail
-          <span className="ml-2 text-xs font-normal text-slate-400">({entries.length} entries)</span>
-        </span>
-        <span className="text-slate-400 text-xs">{open ? '▲ Collapse' : '▼ Expand'}</span>
-      </button>
-
+        <span>Audit Trail <span style={{ color: 'var(--text-muted)' }}>({entries.length})</span></span>
+        <div className="right">
+          <span className="kbd">A</span>
+          <span>{open ? '▲ Collapse' : '▼ Expand'}</span>
+        </div>
+      </div>
       {open && (
-        <div className="max-h-48 overflow-y-auto border-t border-slate-100">
+        <div className="audit-list">
           {entries.length === 0 ? (
-            <p className="text-slate-400 text-sm px-6 py-4">No activity yet</p>
+            <div style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-muted)' }}>
+              No events yet — start the demo to see live activity.
+            </div>
           ) : (
-            <ul className="divide-y divide-slate-50">
-              {entries.map((entry, i) => (
-                <li key={i} className="flex items-start gap-3 px-6 py-2">
-                  <span className="font-mono text-xs text-slate-400 mt-0.5 flex-shrink-0 w-44">
-                    {new Date(entry.timestamp).toLocaleTimeString()}
-                  </span>
-                  <span className="text-xs bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded flex-shrink-0">
-                    {entry.type}
-                  </span>
-                  <span className="text-sm text-slate-700 min-w-0">{entry.summary}</span>
-                </li>
-              ))}
-            </ul>
+            entries.map((entry, i) => (
+              <div className="audit-row" key={i}>
+                <span className="audit-time">{new Date(entry.timestamp).toLocaleTimeString()}</span>
+                <span className={`audit-tag ${entry.type}`}>{entry.type}</span>
+                <span className="audit-summary">{entry.summary}</span>
+              </div>
+            ))
           )}
         </div>
       )}

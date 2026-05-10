@@ -49,7 +49,7 @@ function handleMessage(state: AppState, msg: WsMessage): AppState {
       const updatedCall = { ...msg.payload }
       const calls = existing >= 0
         ? state.calls.map((c, i) => i === existing ? { ...c, ...updatedCall } : c)
-        : [updatedCall, ...state.calls]
+        : [{ ...updatedCall, _t: Date.now() }, ...state.calls]
       return {
         ...state,
         calls,

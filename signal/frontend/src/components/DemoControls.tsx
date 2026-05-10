@@ -1,6 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { Mode } from '../types'
 
 type ButtonId = 'start' | 'surge' | 'reset'
+
+interface Props {
+  mode?: Mode
+}
 
 interface ButtonState {
   loading: boolean
@@ -13,12 +18,18 @@ const ENDPOINTS: Record<ButtonId, string> = {
   reset: '/api/demo/reset',
 }
 
-export default function DemoControls() {
+export default function DemoControls({ mode }: Props) {
   const [states, setStates] = useState<Record<ButtonId, ButtonState>>({
     start: { loading: false, error: null },
     surge: { loading: false, error: null },
     reset: { loading: false, error: null },
   })
+  const [now, setNow] = useState(new Date())
+
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 1000)
+    return () => clearInterval(t)
+  }, [])
 
   const handleClick = async (id: ButtonId) => {
     setStates((s) => ({ ...s, [id]: { loading: true, error: null } }))
@@ -34,33 +45,44 @@ export default function DemoControls() {
     }
   }
 
-  const btn = (
-    id: ButtonId,
-    label: string,
-    extraClass: string,
-  ) => (
-    <div className="flex items-center gap-2">
-      <button
-        onClick={() => handleClick(id)}
-        disabled={states[id].loading}
-        className={`text-sm border px-3 py-1.5 rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${extraClass}`}
-      >
-        {states[id].loading ? '…' : label}
-      </button>
-      {states[id].error && (
-        <span className="text-xs text-red-500">{states[id].error}</span>
-      )}
-    </div>
-  )
+  const anyError = (['start', 'surge', 'reset'] as ButtonId[]).find((id) => states[id].error)
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-3 flex items-center gap-6 z-40">
-      <span className="text-xs text-slate-400 font-semibold uppercase tracking-wide">
-        Demo Controls
-      </span>
-      {btn('start', 'Start Demo', 'border-slate-300 text-slate-700 hover:bg-slate-50')}
-      {btn('surge', 'Trigger Surge', 'border-red-300 text-red-600 hover:bg-red-50')}
-      {btn('reset', 'Reset', 'border-slate-300 text-slate-600 hover:bg-slate-50')}
+    <div className="demo-bar">
+      <span className="demo-label">Demo Controls</span>
+      <div className="demo-actions">
+        <button
+          className="demo-btn"
+          disabled={states.start.loading}
+          onClick={() => handleClick('start')}
+        >
+          {states.start.loading ? '…' : '▶'} Start Demo
+        </button>
+        <button
+          className="demo-btn danger"
+          disabled={states.surge.loading || mode === 'SURGE'}
+          onClick={() => handleClick('surge')}
+        >
+          {states.surge.loading ? '…' : '⚡'} Trigger Surge
+        </button>
+        <button
+          className="demo-btn"
+          disabled={states.reset.loading}
+          onClick={() => handleClick('reset')}
+        >
+          {states.reset.loading ? '…' : '↺'} Reset
+        </button>
+        {anyError && (
+          <span className="demo-error">Request failed</span>
+        )}
+      </div>
+      <div className="demo-clock">
+        <span>v0.9-demo</span>
+        <span>·</span>
+        <span>OPERATOR D-114</span>
+        <span>·</span>
+        <span>{now.toLocaleTimeString()}</span>
+      </div>
     </div>
   )
 }
