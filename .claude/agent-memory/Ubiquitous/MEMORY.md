@@ -1,0 +1,1 @@
+- [SIGNAL domain glossary](project_signal_domain_glossary.md) — canonical ubiquitous language for emergency dispatch system
