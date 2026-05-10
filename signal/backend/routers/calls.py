@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import uuid
 from datetime import datetime, timezone
 
@@ -7,6 +8,8 @@ from pydantic import BaseModel
 
 import state
 from ws.hub import manager
+
+_log = logging.getLogger("signal.calls")
 
 router = APIRouter()
 
@@ -68,13 +71,16 @@ async def _run_pipeline(call: dict) -> None:
 
     triage = await triage_agent(call)
 
-    # Update call in queue with real triage data
     for c in state.call_queue:
         if c["id"] == call["id"]:
             c["severity"] = triage.severity
             c["incident_type"] = triage.incident_type
             c["vulnerable"] = triage.vulnerable
             break
+
+    vuln_flag = " [VULNERABLE]" if triage.vulnerable else ""
+    _log.info("CALL [%s] zone=%s %s %s%s — %s",
+              call["id"], triage.zone, triage.severity, triage.incident_type, vuln_flag, triage.reasoning)
 
     await manager.broadcast("CALL_ADDED", {
         "id": call["id"],

@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 from dataclasses import dataclass
 
@@ -6,6 +7,8 @@ import anthropic
 
 import state
 from ws.hub import manager
+
+_log = logging.getLogger("signal.triage")
 
 _client = anthropic.AsyncAnthropic()
 
@@ -82,6 +85,7 @@ Rules:
         vulnerable = bool(data.get("vulnerable", vulnerable))
         reasoning = data.get("reasoning", "")
     except Exception as e:
+        _log.error("Triage parse error for call %s: %s", call["id"], e)
         reasoning = f"Parse error: {e}"
 
     result = TriageResult(

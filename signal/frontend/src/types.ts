@@ -34,12 +34,19 @@ export interface AuditEntry {
   summary: string
 }
 
+export interface Briefing {
+  call_id: string
+  text: string
+  audio_url: string | null
+  timestamp: string
+}
+
 export interface AppState {
   mode: Mode
   calls: Call[]
   agents: Record<AgentName, AgentState>
   activeHold: HoldEvent | null
-  lastBriefing: { text: string; audio_url: string | null } | null
+  briefings: Briefing[]
   auditLog: AuditEntry[]
   connected: boolean
 }

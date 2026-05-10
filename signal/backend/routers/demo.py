@@ -1,10 +1,13 @@
 import asyncio
+import logging
 from datetime import datetime, timezone
 
 from fastapi import APIRouter
 
 import state
 from ws.hub import manager
+
+_log = logging.getLogger("signal.demo")
 
 router = APIRouter(prefix="/demo")
 
@@ -19,7 +22,7 @@ async def demo_reset():
     state.call_queue.clear()
     state.incident_log.clear()
     state.hold_queue.clear()
-    state.simulator_lambda["value"] = 2.0
+    state.simulator_lambda["value"] = 0.1
 
     for r in state.resources:
         r["available"] = True
@@ -29,6 +32,7 @@ async def demo_reset():
     for agent in ("MONITOR", "TRIAGE", "RESOURCE", "RELAY"):
         await manager.broadcast("AGENT_STATUS", {"agent": agent, "status": "IDLE", "last_action": "System reset"})
 
+    _log.info("Demo reset — all state cleared")
     return {"ok": True, "message": "State reset to clean"}
 
 
@@ -59,6 +63,7 @@ async def demo_start():
         await process_call(call_data)
         await asyncio.sleep(2)
 
+    _log.info("Demo started — 2 normal calls injected")
     return {"ok": True, "message": "Demo started — 2 calls injected in Assisted Mode"}
 
 
@@ -120,4 +125,5 @@ async def demo_trigger_surge():
         await process_call(call_data)
         await asyncio.sleep(0.8)
 
+    _log.warning("Demo surge triggered — 4 calls injected, heavy asset included")
     return {"ok": True, "message": "Surge triggered — 4 calls injected, heavy asset call included"}

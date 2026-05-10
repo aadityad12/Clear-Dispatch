@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import os
 from contextlib import asynccontextmanager
 
@@ -10,11 +11,16 @@ from fastapi.staticfiles import StaticFiles
 
 load_dotenv()
 
+import logger  # must import before any other signal modules to set up the handler
+
 import state
 from agents.monitor import monitor_loop
 from simulator import simulator_loop
 from ws.hub import manager
 from routers import calls, state_router, override, hold, demo
+from routers import logs_router
+
+_log = logging.getLogger("signal.main")
 
 
 @asynccontextmanager
@@ -37,11 +43,14 @@ async def lifespan(app: FastAPI):
 
     monitor_task = asyncio.create_task(monitor_loop())
     simulator_task = asyncio.create_task(simulator_loop())
+    _log.info("SIGNAL backend started — mode=%s threshold=%d",
+              state.system_state["mode"], state.system_state["surge_threshold"])
 
     yield
 
     monitor_task.cancel()
     simulator_task.cancel()
+    _log.info("SIGNAL backend shutting down")
 
 
 os.makedirs("audio", exist_ok=True)
@@ -63,6 +72,7 @@ app.include_router(state_router.router)
 app.include_router(override.router)
 app.include_router(hold.router)
 app.include_router(demo.router)
+app.include_router(logs_router.router)
 
 
 @app.get("/health")

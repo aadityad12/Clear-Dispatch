@@ -1,3 +1,4 @@
+import logging
 import os
 from datetime import datetime, timezone
 
@@ -6,6 +7,8 @@ import httpx
 
 import state
 from ws.hub import manager
+
+_log = logging.getLogger("signal.relay")
 
 _client = anthropic.AsyncAnthropic()
 
@@ -41,8 +44,7 @@ Return ONLY the briefing sentence, nothing else."""
         )
         briefing_text = response.content[0].text.strip()
     except Exception as e:
-        # Keep the template fallback
-        pass
+        _log.error("Briefing generation failed for call %s: %s", call["id"], e)
 
     # ElevenLabs TTS
     audio_url = None
@@ -63,7 +65,7 @@ Return ONLY the briefing sentence, nothing else."""
                     f.write(resp.content)
                 audio_url = f"/audio/{call['id']}.mp3"
         except Exception as e:
-            print(f"[RELAY] ElevenLabs error: {e}")
+            _log.error("ElevenLabs TTS failed for call %s: %s", call["id"], e)
             audio_url = None
 
     # Build audit record
@@ -94,6 +96,8 @@ Return ONLY the briefing sentence, nothing else."""
         if c["id"] == call["id"]:
             c["briefing_text"] = briefing_text
             break
+
+    _log.info("BRIEFING [%s] %s", call["id"], briefing_text)
 
     await manager.broadcast("BRIEFING_READY", {
         "call_id": call["id"],

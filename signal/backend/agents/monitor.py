@@ -1,8 +1,11 @@
 import asyncio
+import logging
 from datetime import datetime, timezone, timedelta
 
 import state
 from ws.hub import manager
+
+_log = logging.getLogger("signal.monitor")
 
 
 def _parse_ts(ts: str) -> datetime:
@@ -38,6 +41,7 @@ async def monitor_loop():
             await manager.broadcast("MODE_CHANGE", {"mode": "SURGE", "timestamp": now_iso})
             last_action = f"Surge detected: {rate:.1f} calls/min"
             status = "COMPLETE"
+            _log.warning("MODE → SURGE (%.1f calls/min, threshold=%d)", rate, threshold)
 
         elif current_mode == "SURGE":
             surge_started = state.system_state.get("surge_started_at")
@@ -49,6 +53,7 @@ async def monitor_loop():
                         await manager.broadcast("MODE_CHANGE", {"mode": "ASSISTED", "timestamp": now_iso})
                         last_action = f"Surge ended after {elapsed:.0f}s"
                         status = "COMPLETE"
+                        _log.info("MODE → ASSISTED (surge ended after %.0fs)", elapsed)
                     else:
                         last_action = f"Surge active {elapsed:.0f}s, rate {rate:.1f}/min"
                         status = "RUNNING"

@@ -82,7 +82,7 @@ export default function App() {
         <div className="right-col">
           <AgentCards agents={state.agents} flashing={agentFlash} />
           <BriefingPanel
-            briefing={state.lastBriefing}
+            briefings={state.briefings}
             audioBlocked={audioBlocked}
             onPlayAudio={handlePlayAudio}
           />
