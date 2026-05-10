@@ -172,6 +172,20 @@ Omit or null out any fields you cannot confidently extract."""
 
     call["status"] = "PROCESSING"
 
+    # Push extracted fields to the frontend so the call card can show details
+    await manager.broadcast("CALL_UPDATED", {
+        "id": body.call_id,
+        "final": True,
+        "severity": call["severity"],
+        "incident_type": call["incident_type"],
+        "location": extracted.get("location"),
+        "one_liner": extracted.get("one_liner"),
+        "caller_status": extracted.get("caller_status"),
+        "people_affected": extracted.get("people_affected"),
+        "hazards": extracted.get("hazards"),
+        "transcript_snippet": body.transcript,
+    })
+
     asyncio.create_task(_run_pipeline(call))
 
     _log.info(

@@ -80,6 +80,7 @@ export default function App() {
       <div className="main-grid">
         <CallQueue
           calls={state.calls}
+          briefings={state.briefings}
           onShowOnMap={(lat, lon) => mapRef.current?.flyTo(lat, lon)}
         />
         <MapView ref={mapRef} calls={state.calls} mode={state.mode} />
