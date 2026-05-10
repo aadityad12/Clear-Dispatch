@@ -38,6 +38,12 @@ export function reducer(state: AppState, action: Action): AppState {
 function handleMessage(state: AppState, msg: WsMessage): AppState {
   const now = new Date().toISOString()
   switch (msg.type) {
+    case 'DEMO_RESET':
+      return {
+        ...initialState,
+        connected: state.connected,
+        auditLog: [{ timestamp: msg.payload.timestamp || now, type: 'DEMO_RESET', summary: 'Demo reset — UI state cleared' }],
+      }
     case 'MODE_CHANGE':
       return {
         ...state,

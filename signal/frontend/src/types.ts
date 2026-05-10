@@ -54,6 +54,7 @@ export interface AppState {
 }
 
 export type WsMessage =
+  | { type: 'DEMO_RESET'; payload: { timestamp: string } }
   | { type: 'MODE_CHANGE'; payload: { mode: Mode; timestamp: string } }
   | { type: 'CALL_ADDED'; payload: { id: string; severity: Severity; zone: string; vulnerable: boolean; incident_type: string; lat?: number; lon?: number } }
   | { type: 'AGENT_STATUS'; payload: { agent: AgentName; status: AgentStatus; last_action: string } }

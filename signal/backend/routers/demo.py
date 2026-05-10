@@ -28,6 +28,7 @@ async def demo_reset():
         r["available"] = True
 
     now = datetime.now(timezone.utc).isoformat()
+    await manager.broadcast("DEMO_RESET", {"timestamp": now})
     await manager.broadcast("MODE_CHANGE", {"mode": "ASSISTED", "timestamp": now})
     for agent in ("MONITOR", "TRIAGE", "RESOURCE", "RELAY"):
         await manager.broadcast("AGENT_STATUS", {"agent": agent, "status": "IDLE", "last_action": "System reset"})
