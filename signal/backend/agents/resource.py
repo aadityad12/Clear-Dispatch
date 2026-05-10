@@ -1,9 +1,12 @@
 import asyncio
+import logging
 import math
 import uuid
 
 import state
 from ws.hub import manager
+
+_log = logging.getLogger("signal.resource")
 
 HEAVY_ASSET_TYPES = {"air_tanker", "heavy_rescue", "hazmat"}
 
@@ -45,6 +48,7 @@ async def resource_agent(call: dict, triage) -> dict:
     unit = _find_nearest(lat, lon, prefer_heavy=prefer_heavy)
 
     if unit is None:
+        _log.warning("No available units for call %s", call["id"])
         await manager.broadcast("AGENT_STATUS", {
             "agent": "RESOURCE",
             "status": "ERROR",
@@ -99,7 +103,6 @@ async def resource_agent(call: dict, triage) -> dict:
             })
         else:
             result["hold_confirmed"] = False
-            # Restore unit availability on cancel/timeout
             unit["available"] = True
             action = "cancelled" if resolved == "CANCELLED" else "timed out"
             await manager.broadcast("AGENT_STATUS", {
