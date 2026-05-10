@@ -59,7 +59,7 @@ export default function App() {
           <div className="flex flex-col gap-4">
             <AgentCards agents={state.agents} />
             <BriefingPanel
-              briefing={state.lastBriefing}
+              briefings={state.briefings}
               audioBlocked={audioBlocked}
               onPlayAudio={handlePlayAudio}
             />

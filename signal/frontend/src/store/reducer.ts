@@ -1,4 +1,4 @@
-import { AppState, WsMessage, AgentName } from '../types'
+import { AppState, WsMessage, AgentName, Briefing } from '../types'
 
 const INITIAL_AGENTS = {
   MONITOR:  { name: 'MONITOR'  as AgentName, status: 'IDLE' as const, last_action: 'Watching call volume' },
@@ -12,7 +12,7 @@ export const initialState: AppState = {
   calls: [],
   agents: INITIAL_AGENTS,
   activeHold: null,
-  lastBriefing: null,
+  briefings: [],
   auditLog: [],
   connected: false,
 }
@@ -86,12 +86,19 @@ function handleMessage(state: AppState, msg: WsMessage): AppState {
         activeHold: state.activeHold?.hold_id === msg.payload.hold_id ? null : state.activeHold,
         auditLog: [{ timestamp: now, type: 'HOLD_RESOLVED', summary: `HOLD ${msg.payload.hold_id}: ${msg.payload.action}` }, ...state.auditLog],
       }
-    case 'BRIEFING_READY':
+    case 'BRIEFING_READY': {
+      const briefing: Briefing = {
+        call_id: msg.payload.call_id,
+        text: msg.payload.text,
+        audio_url: msg.payload.audio_url,
+        timestamp: now,
+      }
       return {
         ...state,
-        lastBriefing: { text: msg.payload.text, audio_url: msg.payload.audio_url },
+        briefings: [briefing, ...state.briefings],
         auditLog: [{ timestamp: now, type: 'BRIEFING_READY', summary: msg.payload.text }, ...state.auditLog],
       }
+    }
     case 'INCIDENT_REPORT':
       return {
         ...state,
