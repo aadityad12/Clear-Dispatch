@@ -157,6 +157,24 @@ VITE_WS_URL=ws://localhost:8000/ws
 
 Reset → Start Demo (2 normal calls, ASSISTED) → Trigger Surge (SURGE banner, 4 auto-triaged calls) → voice briefing or text fallback → Protocol HOLD modal on heavy asset → dispatcher confirms → Override → Audit Trail.
 
+## Optional Features (post-MVP, implement only if time permits)
+
+<!-- These were scoped and designed during /grill-me but deferred to keep the demo MVP tight. -->
+<!-- To implement one, tell Claude: "implement the optional feature: <name>" -->
+
+### 1. Assisted Mode — Live Caller Transcription
+Dispatcher clicks "Answer Call" → browser MediaRecorder captures audio in 4s chunks → `POST /call/audio-chunk` → ElevenLabs Scribe STT → incremental Claude Haiku extraction → `CALL_UPDATED` WS event → live-updating info card in CallQueue with LIVE badge and transcript snippet. Ends with `POST /call/end-live` which feeds into the existing resource + relay pipeline.
+- New state: `live_transcripts: dict[str,str]`, `live_extractions: dict[str,dict]`
+- New endpoints: `POST /call/start-live`, `POST /call/audio-chunk`, `POST /call/end-live`
+- New WS event: `CALL_UPDATED { id, final, transcript_snippet, severity?, incident_type?, location?, one_liner?, caller_status?, people_affected?, hazards?, structure_type? }`
+- Button visible only in ASSISTED mode
+
+### 2. Surge Mode — ElevenLabs Conversational Voice Agent
+When in SURGE, an autonomous ElevenLabs Conversational AI agent answers overflow calls. Browser uses `@11labs/client` SDK directly (no backend WS proxy needed). Backend endpoints `POST /surge/call/initiate` and `POST /surge/call/complete` create call records and feed collected data into the existing triage/resource/relay pipeline. Requires `ELEVENLABS_SURGE_AGENT_ID` and `ELEVENLABS_SURGE_VOICE_ID` env vars configured in the ElevenLabs dashboard first.
+- New env: `ELEVENLABS_SURGE_AGENT_ID`, `ELEVENLABS_SURGE_VOICE_ID` (backend + frontend)
+- "Simulate Incoming Call" button in DemoControls, visible only in SURGE mode
+- Expandable CallQueue cards with compact/expanded views; CRITICAL or in_danger cards auto-expand
+
 ## Agents & Skills Available
 
 - **`Ubiquitous` agent**: run whenever new technology or domain terms are introduced — extracts DDD-style glossary to `UBIQUITOUS_LANGUAGE.md`
