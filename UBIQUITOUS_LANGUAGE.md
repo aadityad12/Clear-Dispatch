@@ -4,159 +4,6 @@ A human-in-the-loop emergency dispatch support system for wildfire surge events.
 
 ---
 
-## System Modes
-
-| Term        | Definition                                                                                   | Aliases to avoid         |
-| ----------- | --------------------------------------------------------------------------------------------- | ------------------------ |
-| **ASSISTED** | Normal operating mode in which the dispatcher is in full control and AI agents support       | Manual, normal, default  |
-| **SURGE**    | High-volume crisis mode activated when incoming call rate exceeds the SURGE_THRESHOLD        | Overload, emergency mode |
-
----
-
-## Actors
-
-| Term            | Definition                                                                  | Aliases to avoid    |
-| --------------- | --------------------------------------------------------------------------- | ------------------- |
-| **Dispatcher**  | The human 911 operator; sole decision-maker; never bypassed by the AI       | User, operator      |
-| **Caller**      | A person in crisis placing a 911 call; AI never communicates with them      | Requester, victim   |
-| **AI Agent**    | One of four named intelligent systems assisting the dispatcher              | Agent module, bot   |
-
----
-
-## AI Agents
-
-Each agent performs a distinct role in the dispatch workflow.
-
-| Term          | Definition                                                       | Aliases to avoid    |
-| ------------- | ---------------------------------------------------------------- | ------------------- |
-| **MONITOR**   | Watches incoming call volume; triggers SURGE mode when threshold | Call tracker        |
-| **TRIAGE**    | Classifies incident severity (CRITICAL, URGENT, STANDARD)        | Classifier          |
-| **RESOURCE**  | Allocates and dispatches response units; enforces HOLD protocol  | Dispatcher agent    |
-| **RELAY**     | Generates dispatcher briefings via TTS or text; summarizes calls | Briefing generator  |
-
----
-
-## Call & Incident
-
-| Term              | Definition                                                                                        | Aliases to avoid       |
-| ----------------- | ------------------------------------------------------------------------------------------------- | ---------------------- |
-| **Call**          | An incoming 911 request from a caller; immutable identifier for the entire incident lifecycle    | Request, ticket       |
-| **Incident**      | The emergency situation described by a call (e.g., wildfire, structure fire)                     | Event, emergency      |
-| **Severity**      | The classified priority level of a call; one of CRITICAL, URGENT, STANDARD, or transient PENDING | Priority, classification |
-| **CRITICAL**      | Most urgent severity; immediate life-safety threat                                              | High, red              |
-| **URGENT**        | Severe but not immediate life-safety threat                                                      | Medium, orange         |
-| **STANDARD**      | Lower urgency or routine incident                                                               | Low, green             |
-| **PENDING**       | Transient severity state assigned immediately upon call intake; replaced by TRIAGE classification | Unclassified, unknown |
-| **Incident Type** | The category of emergency (e.g., structure fire, vegetation fire, medical, hazmat)               | Event type, category  |
-| **Zone**          | Geographic area or district where the incident is located                                        | Region, area, sector  |
-| **Vulnerable**    | Boolean flag indicating the caller is a vulnerable individual (elderly, disabled, etc.)          | Special needs, at-risk |
-
----
-
-## Response Units & Dispatch
-
-| Term        | Definition                                                                         | Aliases to avoid      |
-| ----------- | ---------------------------------------------------------------------------------- | --------------------- |
-| **Unit**    | A dispatched response resource (fire truck, tanker, rescue team, etc.)             | Vehicle, resource     |
-| **Unit ID** | Unique identifier for a response unit                                              | Vehicle ID, truck ID  |
-| **ETA**     | Estimated time of arrival in minutes for a dispatched unit to reach the incident  | Arrival time, time to scene |
-| **Dispatch** | The act of assigning and sending a unit to a call                                 | Send, assign          |
-
----
-
-## Protocol HOLD
-
-The HOLD protocol prevents dangerous deployments without explicit human approval.
-
-| Term             | Definition                                                                    | Aliases to avoid       |
-| ---------------- | ----------------------------------------------------------------------------- | ---------------------- |
-| **HOLD**         | A blocking state requiring dispatcher confirmation before deploying a heavy asset | Block, gate           |
-| **Hold Event**   | A HOLD_REQUIRED message requesting dispatcher decision on a deployment       | Hold request           |
-| **Heavy Asset**  | Specialized or high-risk response unit (air_tanker, heavy_rescue, hazmat)    | Restricted unit       |
-| **Confirm**      | Dispatcher action approving a HOLD; permits unit dispatch                     | Approve               |
-| **Cancel**       | Dispatcher action rejecting a HOLD; prevents unit dispatch                    | Reject, deny          |
-
----
-
-## Briefing
-
-| Term              | Definition                                                                  | Aliases to avoid       |
-| ----------------- | --------------------------------------------------------------------------- | ---------------------- |
-| **Briefing**      | A summary of a call generated by RELAY agent for the dispatcher              | Summary, overview      |
-| **Briefing Text** | Human-readable text form of a briefing                                       | Text summary           |
-| **Audio Briefing** | Briefing rendered as spoken audio via ElevenLabs TTS; optional, text fallback | Voice briefing, TTS   |
-
----
-
-## Audit & Observability
-
-| Term              | Definition                                                                              | Aliases to avoid       |
-| ----------------- | --------------------------------------------------------------------------------------- | ---------------------- |
-| **Audit Entry**   | A timestamped record of a system event (mode change, call added, agent status, hold, etc.) | Log entry, event log |
-| **Audit Log**     | Chronologically ordered list of all audit entries; immutable append-only log             | System log             |
-| **Override**      | Dispatcher action to forcibly return from SURGE to ASSISTED mode                        | Cancel surge, reset    |
-
----
-
-## Technical Terms with Domain Meaning
-
-| Term                 | Definition                                                                                                           | Aliases to avoid       |
-| -------------------- | -------------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| **Agent Status**     | Current state of an AI agent: IDLE (ready), RUNNING (active), COMPLETE (finished), or ERROR (failed)               | State, condition       |
-| **WebSocket Message** | Real-time event pushed from backend to frontend via `/ws` connection; carries call, agent, hold, mode, or briefing data | Event, frame          |
-| **Mode Change**      | A WebSocket event indicating transition between ASSISTED and SURGE modes                                            | Mode switch            |
-| **SURGE_THRESHOLD**  | Environment variable controlling call rate (calls/min) at which SURGE mode activates; default 10                   | Threshold value       |
-
----
-
-## Relationships
-
-- A **Call** is placed by a **Caller** and received by a **Dispatcher**.
-- A **Call** has exactly one **Severity** (CRITICAL, URGENT, STANDARD, or PENDING).
-- **TRIAGE** replaces PENDING severity with a final classification (CRITICAL, URGENT, or STANDARD).
-- **RESOURCE** may dispatch a **Unit** to a **Call**, generating an ETA.
-- A **Unit** deployment may trigger a **HOLD** if it is a **Heavy Asset**.
-- A **Dispatcher** must **Confirm** or **Cancel** a **HOLD** before the **Unit** can be dispatched.
-- **RELAY** generates a **Briefing** (text or audio) for each **Call**, viewed by the **Dispatcher**.
-- **MONITOR** triggers transition from **ASSISTED** to **SURGE** when call volume exceeds **SURGE_THRESHOLD**.
-- **Dispatcher** can issue an **Override** to return from **SURGE** to **ASSISTED**.
-- Every action is recorded as an **Audit Entry** in the immutable **Audit Log**.
-
----
-
-## Example Dialogue
-
-> **Frontend Dev:** "When a caller places a call, what severity do we show them?"
->
-> **Domain Expert:** "We show nothing to the caller. The dispatcher receives the **Call** immediately with severity PENDING. TRIAGE classifies it within seconds to CRITICAL, URGENT, or STANDARD."
->
-> **Frontend Dev:** "So if a **Call** comes in during **SURGE** mode with a **Heavy Asset** request, what happens?"
->
-> **Domain Expert:** "RESOURCE detects the **Heavy Asset** type and emits a **HOLD_REQUIRED** message. The dispatcher sees the **Hold** modal with the **Call** details and must explicitly **Confirm** or **Cancel** before dispatch. If they **Confirm**, the **Unit** is dispatched with an ETA. If they **Cancel**, the **Unit** never moves."
->
-> **Frontend Dev:** "And if the dispatcher wants to exit **SURGE** mode while there are active **Holds**?"
->
-> **Domain Expert:** "They issue an **Override**. The system returns to **ASSISTED** mode immediately. Any pending **Holds** remain until the dispatcher resolves them — the mode change doesn't auto-cancel deployments. Every action, including the **Override**, is logged as an **Audit Entry** with a timestamp."
->
-> **Frontend Dev:** "Got it. So the **Dispatcher** is always the bottleneck for critical decisions, and the **Audit Log** records every turn."
->
-> **Domain Expert:** "Exactly. The **AI Agents** advise, but the **Dispatcher** decides. That's the core safety constraint: the AI never speaks to the **Caller**, only to the **Dispatcher**."
-
----
-
-## Flagged Ambiguities
-
-**None identified.** The terminology is internally consistent across codebase, PRD, and team specification. All synonyms (e.g., "caller" vs. "requester") have been consolidated into canonical terms. The PENDING severity state is correctly recognized as transient, not a final classification.
-
----
-
-## Notes for Implementation
-
-- **Enums** (Mode, Severity, AgentName, AgentStatus) are shared contracts across backend, frontend, and integration layers. Changes require all three to align.
-- **WebSocket messages** are the source-of-truth for inter-service communication; never deviate from the canonical schema.
-- **Heavy asset types** (air_tanker, heavy_rescue, hazmat) trigger HOLD protocol; new types must be added to the enum and the HOLD logic.
-- **Dispatcher** is never bypassed by AI. Every HOLD, override, or critical decision requires human confirmation.
-- **Audit Log** is append-only and immutable; timestamps use ISO8601 format.
 ## Operating Modes
 
 | Term | Definition | Aliases to avoid |
@@ -232,8 +79,9 @@ The HOLD protocol prevents dangerous deployments without explicit human approval
 | Term | Definition | Aliases to avoid |
 | --- | --- | --- |
 | **Override** | Dispatcher action to force return to ASSISTED mode from SURGE; logged as `dispatcher_override: true` in the incident record. Used when dispatcher judges that the incident requires manual control. | Manual override, mode override, force manual |
-| **Briefing** | A concise spoken summary generated by RELAY containing incident ID, severity, zone, incident type, assigned unit, and ETA. Follows template: "Incident [ID]. [Severity]. [Zone]. [Incident type]. Unit [unit_id] dispatched. ETA [N] minutes." | Summary, incident summary, dispatch brief |
-| **Audio briefing** | A TTS-rendered briefing via ElevenLabs; falls back to text-only briefing if the audio key is absent. | Voice briefing, spoken briefing |
+| **Briefing** | A single summary record generated by RELAY for a call, containing call_id, text content, audio_url (ElevenLabs MP3 or null), and ISO8601 timestamp of receipt. | Summary, dispatch brief |
+| **Audio briefing** | A TTS-rendered briefing via ElevenLabs; `audio_url` field contains MP3 URL, or null if TTS was unavailable. | Voice briefing, spoken briefing |
+| **Briefing history** | The ordered array of all past **Briefings** for the current session (newest first), stored in frontend React state. Reset on page reload. | Briefing list, briefing array, past briefings |
 
 ## System Events
 
@@ -254,53 +102,90 @@ The HOLD protocol prevents dangerous deployments without explicit human approval
 | --- | --- | --- |
 | **System state** | In-memory singleton containing: current mode (ASSISTED/SURGE), surge_threshold, surge_started_at timestamp, and call_timestamps for rate computation. | Global state, system configuration |
 | **Simulator** | Background task that generates synthetic calls at a configurable Poisson rate (λ calls/minute) for testing and load simulation. | Call generator, synthetic call task, test simulator |
+| **Simulator lambda** | The Poisson arrival rate (calls/minute): λ=0.1 (demo-quiet mode), λ=2.0 (normal background), λ=15.0 (surge demonstration). After **Demo reset**, lambda is set to 0.1 so background simulator noise does not interfere with the scripted demo calls. Normal background operation uses λ=2.0. | Arrival rate, lambda parameter, call rate |
 | **Sliding window** | A 60-second rolling window of call timestamps used by MONITOR to compute the current call rate (calls/minute) for surge detection. | Rate window, 60-second window, moving window |
+| **Demo lifecycle** | The scripted judge demo sequence: **Reset** → **Start Demo** → **Trigger Surge** → confirm HOLD → Override → Audit Trail. Each step must be run in order; Reset re-marks all resources available and sets simulator to demo-quiet mode. | Demo flow, demo steps |
+
+## State Lifecycle
+
+| Term | Definition | Aliases to avoid |
+| --- | --- | --- |
+| **Session state** | Frontend-only in-memory state stored in React component state: **Call queue**, **Briefing history**, UI state, mode indicator. Volatile; reset to empty on page reload. | Frontend state, UI state, transient state |
+| **Persistent state** | Backend-stored data: **incident_log** (completed incidents), audit trail, system configuration. Survives reconnects and outlives sessions. | Backend state, durable state, database state |
+| **Re-hydration** | Process of a client reconnecting after network loss or page reload; client calls `GET /state` to fetch current system state (mode, call queue, recent incidents) and re-initializes **session state**. | State sync, reconnect sync, state fetch |
+| **Incident log** | Append-only persistent backend log of completed incidents; each entry includes call, severity, incident type, assigned units, hold confirmations, briefing, and audit metadata. Created after RELAY generates a **Briefing** and RESOURCE resolves all **Holds**. | Incident record, history log, audit log |
+
+## Demo Mode
+
+| Term | Definition | Aliases to avoid |
+| --- | --- | --- |
+| **Demo reset** | Action that clears all system state (call queue, incident log, briefing history) and sets **simulator lambda** to 0.1 to enter demo-quiet mode. Logged: "Demo reset — all state cleared". | Reset demo, demo clear |
+| **Demo start** | Action that injects 2 synthetic normal calls into the call queue to demonstrate triage and dispatch. Logged: "Demo started — 2 normal calls injected". | Start demo, demo begin |
+| **Demo surge trigger** | Action that injects 4 synthetic calls (including a **heavy asset** request) to demonstrate SURGE mode and the HOLD protocol. Logged: "Demo surge triggered — 4 calls injected, heavy asset included". | Trigger surge, surge demo |
+| **Demo-quiet mode** | State of the simulator after **Demo reset**, with **simulator lambda** = 0.1, producing negligible background calls (~1 per 10 minutes) so judge focus is on injected demo calls. | Quiet simulator, demo pause, background-quiet |
+
+---
 
 ## Flagged Ambiguities
 
-### 1. "Resource" vs. "Unit"
+### 1. "Briefing history" vs. "Incident log"
+- **Problem**: Both record past briefing and incident data, but they exist in different layers and have different lifecycles.
+- **Canonical distinction**:
+  - **Briefing history** → frontend session state (React component state); array of all briefings received in the current session; volatile; reset on page reload
+  - **Incident log** → backend persistent state (database); append-only record of completed incidents with full audit metadata; survives reconnects
+- **Recommendation**: When discussing dispatcher-facing briefings in the current session, say "the **Briefing history** shows all past briefings." When discussing the authoritative audit trail, say "the **incident log** records completed incidents." Session state is ephemeral; persistent state is the source of truth.
+
+### 2. "Resource" vs. "Unit"
 - **Problem**: "Resource" is used both as a module name (`state.resources`) and as a synonym for "Unit" in agent code.
 - **Canonical term**: **Unit**
 - **Recommendation**: Standardize on "Unit" in domain language. If the `state.resources` module name must persist in code, treat it as a technical implementation detail; the domain concept is always "Unit."
 
-### 2. "Incident" lifecycle ambiguity
+### 3. "Incident" lifecycle ambiguity
 - **Problem**: "Incident" is used both for a call-in-progress (after triage) and for the completed log entry (after briefing and dispatch).
 - **Canonical distinction**:
   - **Call** → initial entry; awaiting triage
   - **Incident** → call after triage, resource selection, and briefing generation; logged to incident_log
 - **Recommendation**: In conversation, say "a Call has become an Incident once RELAY generates a briefing."
 
-### 3. "Override" — action vs. field
+### 4. "Override" — action vs. field
 - **Problem**: "Override" refers both to the dispatcher action (POST /override endpoint) and to a boolean field in the audit record (`dispatcher_override: bool`).
 - **Canonical terms**:
   - **Override** (noun/verb) → the dispatcher action or the event
   - **dispatcher_override** → the boolean field in the incident record
 - **Recommendation**: When discussing the action, say "the dispatcher issued an override." When discussing the record, say "the incident has `dispatcher_override: true`."
 
-### 4. "Report" — event vs. object
+### 5. "Report" — event vs. object
 - **Problem**: "Report" refers both to the INCIDENT_REPORT WebSocket event and to the report object contained within the event payload.
 - **Canonical terms**:
   - **INCIDENT_REPORT** → the WebSocket event
   - **Report** or **incident report object** → the payload data structure
 - **Recommendation**: Prefer "INCIDENT_REPORT event" and "incident report payload" to avoid confusion.
 
+---
+
 ## Example Dialogue
 
-> **Dev**: "When MONITOR detects that the call rate exceeds the surge threshold, does SURGE mode activate immediately?"
+> **Frontend Dev**: "During a judge demo, if the briefing history accumulates and then the judge reloads the page, what happens to the briefings?"
 >
-> **Domain Expert**: "Yes. MONITOR uses a 60-second sliding window to compute the call rate. Once calls/minute crosses the threshold, the system transitions to SURGE mode and sets surge_started_at. From that point, TRIAGE, RESOURCE, and RELAY operate automatically without dispatcher intervention on each call."
+> **Domain Expert**: "The **Briefing history** is frontend session state — it's stored only in React component state. When the page reloads, the **Briefing history** is lost. But the **incident log** on the backend persists. When the client reconnects and calls `GET /state`, it gets back the system mode and recent incidents, but the **Briefing history** starts fresh."
 >
-> **Dev**: "And if the dispatcher wants to take back control, they issue an Override?"
+> **Frontend Dev**: "So the judge would lose the visual timeline of briefings they saw during the demo?"
 >
-> **Domain Expert**: "Exactly. An Override forces the system back to ASSISTED mode. That action is logged in the incident record as dispatcher_override: true. But note — an Override doesn't undo the dispatch; it prevents future automated decisions."
+> **Domain Expert**: "Yes, unless you cache the **Briefing history** to localStorage or send it to the backend. The distinction is: volatile **session state** (briefing history) lives only in memory, while **persistent state** (incident log) survives across reconnects."
 >
-> **Dev**: "Got it. Now, when RESOURCE selects a heavy asset like an air_tanker, what happens?"
+> **Frontend Dev**: "Now, if we're running a judge demo and we call Demo reset, what happens to the state?"
 >
-> **Domain Expert**: "RESOURCE doesn't dispatch it directly. Instead, it broadcasts a HOLD_REQUIRED event with a unique hold_id. The dispatcher then sees the hold in the briefing and must either confirm it (CONFIRMED) or cancel it (CANCELLED). Only after CONFIRMED does the air_tanker get dispatched."
+> **Domain Expert**: "**Demo reset** clears all state — call queue, incident log, briefing history — and sets **simulator lambda** to 0.1 to enter **demo-quiet mode**. Then **Demo start** injects 2 normal calls. We log each step so the judge audit trail shows the demo sequence. When you trigger **Demo surge**, we inject 4 calls including a heavy asset; that forces RESOURCE to emit a HOLD, demonstrating the **HOLD** protocol."
 >
-> **Dev**: "So the dispatcher always has the final say on rare resources."
+> **Frontend Dev**: "And the simulator stays quiet during that sequence?"
 >
-> **Domain Expert**: "Correct. Standard assets like engines and personnel are dispatched immediately. But anything involving heavy_rescue, hazmat, or air_tanker goes through HOLD. That's our human-in-the-loop safeguard for expensive and specialized resources."
+> **Domain Expert**: "Right. **Demo-quiet mode** keeps **simulator lambda** at 0.1, so background noise is negligible — only about 1 call every 10 minutes. The judge focus is on the injected demo calls, not random background traffic."
+>
+> **Frontend Dev**: "Got it. So **Demo lifecycle** is the three-step reset-start-surge sequence, and each step is both a UI action and a backend state change?"
+>
+> **Domain Expert**: "Exactly. Each step is logged ('Demo reset — all state cleared', etc.), and it affects both the simulator and the system state. The judge demo is deterministic and fully auditable."
+
+---
 
 ## Key Relationships
 
