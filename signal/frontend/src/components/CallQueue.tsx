@@ -9,6 +9,10 @@ interface Props {
 
 const SEV_RANK: Record<Severity, number> = { CRITICAL: 0, URGENT: 1, STANDARD: 2, PENDING: 3 }
 
+function formatIncidentType(type: string): string {
+  return type.split(/[_\s]+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+}
+
 function getPipelineStatus(call: Call): 'triaging' | 'routing' | null {
   if (call.severity === 'PENDING') return 'triaging'
   if (!call.unit_id) return 'routing'
@@ -93,7 +97,6 @@ function CallCard({
       {/* Row 1 */}
       <div className="call-row1">
         <span className={`badge ${call.severity.toLowerCase()}`}>{call.severity}</span>
-        <span className="call-id">{call.id}</span>
         {call.vulnerable && (
           <span className="call-vuln" title="Vulnerable caller" aria-label="Vulnerable caller">⚠</span>
         )}
@@ -111,7 +114,7 @@ function CallCard({
       </div>
 
       {/* Incident type */}
-      <div className="call-incident">{call.incident_type}</div>
+      <div className="call-incident">{formatIncidentType(call.incident_type)}</div>
 
       {/* Pipeline status chip */}
       {pipelineStatus && <PipelineChip status={pipelineStatus} />}

@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Mode } from '../types'
 import VoiceAgentModal from './VoiceAgentModal'
 
 type ButtonId = 'start' | 'surge' | 'reset' | 'pause' | 'resume'
+type DemoPhase = 'standby' | 'demo' | 'surge'
 
 interface Props {
   mode?: Mode
@@ -31,6 +32,8 @@ const TRANSCRIPT_OPTIONS = [
 
 export default function DemoControls({ mode }: Props) {
   const [paused, setPaused] = useState(false)
+  const [demoPhase, setDemoPhase] = useState<DemoPhase>('standby')
+  const prevMode = useRef<Mode | undefined>(mode)
   const [states, setStates] = useState<Record<ButtonId, ButtonState>>({
     start: { loading: false, error: null },
     surge: { loading: false, error: null },
@@ -56,6 +59,16 @@ export default function DemoControls({ mode }: Props) {
     return () => clearInterval(t)
   }, [])
 
+  // Sync phase with mode prop (SURGE mode transition driven by WS)
+  useEffect(() => {
+    if (mode === 'SURGE' && prevMode.current !== 'SURGE') {
+      setDemoPhase('surge')
+    } else if (mode === 'ASSISTED' && prevMode.current === 'SURGE') {
+      setDemoPhase('demo')
+    }
+    prevMode.current = mode
+  }, [mode])
+
   const handleClick = async (id: ButtonId) => {
     setStates((s) => ({ ...s, [id]: { loading: true, error: null } }))
     try {
@@ -63,6 +76,8 @@ export default function DemoControls({ mode }: Props) {
       if (!res.ok) throw new Error(`${res.status}`)
       if (id === 'pause') setPaused(true)
       if (id === 'resume') setPaused(false)
+      if (id === 'start') setDemoPhase((p) => p === 'standby' ? 'demo' : p)
+      if (id === 'reset') { setPaused(false); setDemoPhase('standby') }
       setStates((s) => ({ ...s, [id]: { loading: false, error: null } }))
     } catch {
       setStates((s) => ({ ...s, [id]: { loading: false, error: 'Request failed' } }))
@@ -150,24 +165,28 @@ export default function DemoControls({ mode }: Props) {
 
   const anyError = (['start', 'surge', 'reset'] as ButtonId[]).find((id) => states[id].error)
 
+  const phaseLabel = demoPhase === 'surge' ? '⚡ SURGE' : demoPhase === 'demo' ? '▶ DEMO' : '— STANDBY'
+  const phaseClass = demoPhase === 'surge' ? 'surge' : demoPhase === 'demo' ? 'started' : 'idle'
+
   return (
     <>
       <div className="demo-bar">
         <span className="demo-label">Demo Controls</span>
+        <span className={`demo-phase-chip ${phaseClass}`}>{phaseLabel}</span>
         <div className="demo-actions">
           <button
-            className="demo-btn"
+            className={`demo-btn ${demoPhase !== 'standby' ? 'demo-btn-started' : ''}`}
             disabled={states.start.loading}
             onClick={() => handleClick('start')}
           >
-            {states.start.loading ? '…' : '▶'} Start Demo
+            {states.start.loading ? '…' : demoPhase !== 'standby' ? '✓ Demo Active' : '▶ Start Demo'}
           </button>
           <button
-            className="demo-btn danger"
+            className={`demo-btn ${mode === 'SURGE' ? 'demo-btn-surge-on' : 'danger'}`}
             disabled={states.surge.loading || mode === 'SURGE'}
             onClick={() => handleClick('surge')}
           >
-            {states.surge.loading ? '…' : '⚡'} Trigger Surge
+            {states.surge.loading ? '…' : mode === 'SURGE' ? '⚡ Surge Active' : '⚡ Trigger Surge'}
           </button>
           {paused ? (
             <button

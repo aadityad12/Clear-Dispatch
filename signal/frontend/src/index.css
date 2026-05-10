@@ -194,7 +194,6 @@ body {
 }
 
 .call-row1 { display: flex; align-items: center; gap: 8px; }
-.call-id { font-size: 11px; color: var(--text-secondary); font-family: var(--ui-mono); }
 .call-vuln { color: var(--accent-warning); font-size: 12px; cursor: help; }
 .call-incident { font-size: 14px; font-weight: 500; color: var(--text-primary); }
 .call-zone { font-size: 11px; color: var(--text-secondary); font-family: var(--ui-mono); }
@@ -425,7 +424,7 @@ body {
 }
 .audit-row {
   display: grid;
-  grid-template-columns: 96px 140px 1fr;
+  grid-template-columns: 96px 130px 1fr;
   gap: 12px;
   padding: 4px 16px;
   font-size: 12px;
@@ -480,7 +479,22 @@ body {
 .demo-btn:hover { background: var(--bg-raised); }
 .demo-btn.danger { border-color: #7f1d1d; color: #fca5a5; }
 .demo-btn.danger:hover { background: rgba(220,38,38,0.08); }
+.demo-btn.demo-btn-started { background: rgba(22,163,74,0.1); border-color: #16a34a; color: #4ade80; }
+.demo-btn.demo-btn-started:hover { background: rgba(22,163,74,0.18); }
+.demo-btn.demo-btn-surge-on { background: rgba(217,119,6,0.15); border-color: #d97706; color: #fcd34d; cursor: default; }
 .demo-btn:disabled { opacity: 0.55; cursor: wait; }
+.demo-btn.demo-btn-surge-on:disabled { opacity: 1; }
+.demo-phase-chip {
+  font-family: var(--ui-mono);
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 0.12em;
+  padding: 3px 10px; border-radius: 999px;
+  border: 1px solid;
+  flex-shrink: 0;
+}
+.demo-phase-chip.idle { color: var(--text-muted); border-color: var(--border); background: transparent; }
+.demo-phase-chip.started { color: #60a5fa; border-color: #1e3a5f; background: rgba(37,99,235,0.08); }
+.demo-phase-chip.surge { color: #fcd34d; border-color: #78350f; background: rgba(217,119,6,0.12); animation: pulseSoft 1.5s infinite; }
 .demo-error {
   font-family: var(--ui-mono);
   font-size: 11px; color: #fca5a5;

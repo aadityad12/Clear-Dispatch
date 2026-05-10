@@ -77,20 +77,20 @@ function handleMessage(state: AppState, msg: WsMessage): AppState {
       return {
         ...state,
         calls,
-        auditLog: [{ timestamp: now, type: 'UNIT_DISPATCHED', summary: `Unit ${msg.payload.unit_id} → call ${msg.payload.call_id}, ETA ${msg.payload.eta_minutes}min` }, ...state.auditLog],
+        auditLog: [{ timestamp: now, type: 'UNIT_DISPATCHED', summary: `${msg.payload.unit_id} dispatched to call ${msg.payload.call_id} — ETA ${msg.payload.eta_minutes} min` }, ...state.auditLog],
       }
     }
     case 'HOLD_REQUIRED':
       return {
         ...state,
         activeHold: msg.payload,
-        auditLog: [{ timestamp: now, type: 'HOLD_REQUIRED', summary: `HOLD: ${msg.payload.asset_type} requested for call ${msg.payload.call_id}` }, ...state.auditLog],
+        auditLog: [{ timestamp: now, type: 'HOLD_REQUIRED', summary: `${msg.payload.asset_type.replace(/_/g, ' ')} requested for call ${msg.payload.call_id} — awaiting dispatcher approval` }, ...state.auditLog],
       }
     case 'HOLD_RESOLVED':
       return {
         ...state,
         activeHold: state.activeHold?.hold_id === msg.payload.hold_id ? null : state.activeHold,
-        auditLog: [{ timestamp: now, type: 'HOLD_RESOLVED', summary: `HOLD ${msg.payload.hold_id}: ${msg.payload.action}` }, ...state.auditLog],
+        auditLog: [{ timestamp: now, type: 'HOLD_RESOLVED', summary: `Heavy asset hold ${msg.payload.action.toLowerCase()} by dispatcher` }, ...state.auditLog],
       }
     case 'BRIEFING_READY': {
       const briefing: Briefing = {
@@ -108,7 +108,17 @@ function handleMessage(state: AppState, msg: WsMessage): AppState {
     case 'INCIDENT_REPORT':
       return {
         ...state,
-        auditLog: [{ timestamp: now, type: 'INCIDENT_REPORT', summary: `Report filed for call ${msg.payload.call_id}` }, ...state.auditLog],
+        auditLog: [{ timestamp: now, type: 'INCIDENT_REPORT', summary: `Call ${msg.payload.call_id} — incident report finalized and archived` }, ...state.auditLog],
+      }
+    case 'DEMO_PAUSED':
+      return {
+        ...state,
+        auditLog: [{ timestamp: msg.payload.timestamp || now, type: 'DEMO_PAUSED', summary: 'Simulator paused — API spend halted' }, ...state.auditLog],
+      }
+    case 'DEMO_RESUMED':
+      return {
+        ...state,
+        auditLog: [{ timestamp: msg.payload.timestamp || now, type: 'DEMO_RESUMED', summary: 'Simulator resumed' }, ...state.auditLog],
       }
     case 'CALL_UPDATED': {
       const p = msg.payload

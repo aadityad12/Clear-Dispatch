@@ -5,6 +5,19 @@ interface Props {
   entries: AuditEntry[]
 }
 
+const EVENT_LABELS: Record<string, string> = {
+  CALL_ADDED:      'Call Received',
+  UNIT_DISPATCHED: 'Unit Dispatched',
+  HOLD_REQUIRED:   'Hold Required',
+  HOLD_RESOLVED:   'Hold Resolved',
+  BRIEFING_READY:  'Briefing Ready',
+  INCIDENT_REPORT: 'Call Archived',
+  MODE_CHANGE:     'Mode Changed',
+  DEMO_RESET:      'Demo Reset',
+  DEMO_PAUSED:     'Demo Paused',
+  DEMO_RESUMED:    'Demo Resumed',
+}
+
 export default function AuditTrail({ entries }: Props) {
   const [open, setOpen] = useState(true)
 
@@ -30,7 +43,7 @@ export default function AuditTrail({ entries }: Props) {
         aria-expanded={open}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen((v) => !v) } }}
       >
-        <span>Audit Trail <span style={{ color: 'var(--text-muted)' }}>({entries.length})</span></span>
+        <span>Activity Log <span style={{ color: 'var(--text-muted)' }}>({entries.length} events)</span></span>
         <div className="right">
           <span className="kbd">A</span>
           <span>{open ? '▲ Collapse' : '▼ Expand'}</span>
@@ -46,7 +59,9 @@ export default function AuditTrail({ entries }: Props) {
             entries.map((entry, i) => (
               <div className="audit-row" key={i}>
                 <span className="audit-time">{new Date(entry.timestamp).toLocaleTimeString()}</span>
-                <span className={`audit-tag ${entry.type}`}>{entry.type}</span>
+                <span className={`audit-tag ${entry.type}`}>
+                  {EVENT_LABELS[entry.type] ?? entry.type}
+                </span>
                 <span className="audit-summary">{entry.summary}</span>
               </div>
             ))

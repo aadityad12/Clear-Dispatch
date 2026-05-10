@@ -40,8 +40,6 @@ async def lifespan(app: FastAPI):
     threshold = os.getenv("SURGE_THRESHOLD", "10")
     state.system_state["surge_threshold"] = int(threshold)
 
-    os.makedirs("audio", exist_ok=True)
-
     monitor_task = asyncio.create_task(monitor_loop())
     simulator_task = asyncio.create_task(simulator_loop())
     _log.info("SIGNAL backend started — mode=%s threshold=%d",
